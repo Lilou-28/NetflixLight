@@ -1,0 +1,47 @@
+:root {
+	--bg: #111111;
+	--text: #f5f5f5;
+	--accent: #e50914;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+	background: radial-gradient(circle at top, #1f1f1f, var(--bg));
+	color: var(--text);
+}
+
+.hero {
+	min-height: 100vh;
+	display: grid;
+	place-content: center;
+	gap: 1rem;
+	text-align: center;
+	padding: 2rem;
+}
+
+h1 {
+	margin: 0;
+	font-size: clamp(2rem, 6vw, 4rem);
+	color: var(--accent);
+}
+
+p {
+	margin: 0;
+	opacity: 0.9;
+}
+
+.cta {
+	justify-self: center;
+	text-decoration: none;
+	color: white;
+	background: var(--accent);
+	padding: 0.7rem 1.2rem;
+	border-radius: 999px;
+	font-weight: 600;
+}
