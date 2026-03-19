@@ -17,16 +17,25 @@ db.run(`
     username TEXT UNIQUE,
     email TEXT UNIQUE,
     password TEXT
-    )
+    );
 `)
+db.run(`
+    CREATE TABLE IF NOT EXISTS tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    token TEXT,
+    expires_at DATETIME
+    );
+`)
+
 
 function registerUser(name, email, username, password, callback) {
     const query = `
-        INSERT INTO users (name, username, email, password)
+        INSERT INTO users (name, email, username,password)
         VALUES (?, ?, ?, ?)
     `
 
-    db.run(query, [name, username, email, password], function (err) {
+    db.run(query, [name, email, username, password], function (err) {
         if (callback) {
             callback(err, this ? this.lastID : null)
         }
