@@ -14,6 +14,7 @@
 body {
 	margin: 0;
 	min-height: 100vh;
+	overflow: hidden;
 	font-family: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
 	background: radial-gradient(circle at top, #1f1f1f, var(--bg));
 	color: var(--text);
@@ -23,8 +24,11 @@ body {
 }
 
 .hero {
-    width: min(430px, 100%);
-    margin-inline: auto;
+	width: min(430px, calc(100% - 2rem));
+	justify-content: center;
+	align-items: center;
+	margin: clamp(1rem, 18vh, 8rem) auto 2rem;
+	text-align: center;
     padding: 1.4rem;
     border-radius: 16px;
     border: 1px solid var(--line);
@@ -113,70 +117,7 @@ button:active {
 	font-weight: 600;
 }
 
-.swiper-movies, .swiper-series {
-	width: min(1100px, calc(100% - 40rem));
-	height: auto;
-	margin: 0 auto 2rem;
-	padding: 0.5rem 2.25rem 2rem;
-	border: none;
-	border-radius: 14px;
-	background: transparent;
-}
 
-.swiper-slide {
-	height: auto;
-	border-radius: 10px;
-	overflow: hidden;
-}
-
-.swiper-slide img {
-	width: 100%;
-	height: auto;
-	aspect-ratio: 2 / 3;
-	display: block;
-	object-fit: cover;
-}
-
-.swiper-button-next, .swiper-button-prev {
-	color: #ffffff;
-	background: rgba(0, 0, 0, 0.45);
-	border-radius: 999px;
-	width: 34px;
-	height: 34px;
-}
-
-.swiper-button-next:after, .swiper-button-prev:after {
-	font-size: 14px;
-	font-weight: 700;
-}
-
-.swiper-pagination-bullet {
-	background: rgba(255, 255, 255, 0.5);
-}
-
-.swiper-pagination-bullet-active {
-	background: var(--accent);
-}
-
-h3 {
-	width: min(1100px, calc(100% - 40rem));
-	margin: 0.75rem auto;
-}
-.carousel {
-  display: flex;
-  overflow-x: auto;
-  gap: 10px;
-}
-
-.carousel img {
-  width: 150px;
-  border-radius: 8px;
-  transition: transform 0.3s;
-}
-
-.carousel img:hover {
-  transform: scale(1.1);
-}
 
 @media (max-width: 620px) {
 	.hero {

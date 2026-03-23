@@ -3,7 +3,7 @@ const fs = require('fs')
 const path = require("path");
 require("dotenv").config()
 const db = require("../internal/database")
-const { generateToken, checkToken } = require("../internal/token")
+const { generateToken, checkToken, getSessionTokenFromCookie } = require("../internal/token")
 
 const host = 'localhost'
 const port = 8080
@@ -20,19 +20,7 @@ const mimeTypes = {
     ".html": "text/html",
 };
 
-function getSessionTokenFromCookie(req) {
-    const cookieHeader = req.headers.cookie || ""
-    const cookies = cookieHeader.split(";")
 
-    for (const cookie of cookies) {
-        const trimmed = cookie.trim()
-        if (trimmed.startsWith("session_token=")) {
-            return decodeURIComponent(trimmed.slice("session_token=".length))
-        }
-    }
-
-    return null
-}
 
 const server = http.createServer((req, res) => {
     if (req.url === "/") {
@@ -111,7 +99,7 @@ const server = http.createServer((req, res) => {
 
                         res.writeHead(302, {
                             "Set-Cookie": `session_token=${encodeURIComponent(token)}; Path=/; Max-Age=86400; SameSite=Lax`,
-                            "Location": `/token?token=${encodeURIComponent(token)}`
+                            "Location": `/acceuil`
                         })
                         res.end()
                     })
@@ -273,7 +261,6 @@ const server = http.createServer((req, res) => {
                 res.writeHead(500, {"Content-Type": "application/json"})
                 res.end(JSON.stringify({error: "Erreur lors de la récupération des films populaires"}))
             })
-            console.log("TOKEN:", tmdbBearerToken)
         })
     }
     else if ((req.url === "/api/popular-series") && req.method === "GET") {
@@ -311,7 +298,6 @@ const server = http.createServer((req, res) => {
                 res.writeHead(500, {"Content-Type": "application/json"})
                 res.end(JSON.stringify({error: "Erreur lors de la récupération des séries populaires"}))
             })
-            console.log("TOKEN:", tmdbBearerToken)
         })
     }
     else if ((req.url === "/api/") && req.method === "GET") {
@@ -349,7 +335,6 @@ const server = http.createServer((req, res) => {
                 res.writeHead(500, {"Content-Type": "application/json"})
                 res.end(JSON.stringify({error: "Erreur lors de la récupération des séries populaires"}))
             })
-            console.log("TOKEN:", tmdbBearerToken)
         })
     }
     else if (req.url === "/logout") {
@@ -358,6 +343,12 @@ const server = http.createServer((req, res) => {
             "Location": "/"
         })
         res.end()
+    }
+    else if (req.url === "/acceuil") {
+        fs.readFile(path.join(__dirname,"../web/templates/acceuil.html"), (err, data) => {
+            res.writeHead(200, {"Content-Type" : "text/html" })
+            res.end(data)
+        })
     }
     else {
         res.writeHead(404, {"Content-Type" : "text/plain"})

@@ -35,7 +35,22 @@ function checkToken(token, callback) {
     })
 }
 
+function getSessionTokenFromCookie(req) {
+    const cookieHeader = req.headers.cookie || ""
+    const cookies = cookieHeader.split(";")
+
+    for (const cookie of cookies) {
+        const trimmed = cookie.trim()
+        if (trimmed.startsWith("session_token=")) {
+            return decodeURIComponent(trimmed.slice("session_token=".length))
+        }
+    }
+
+    return null
+}
+
 module.exports = {
     generateToken,
-    checkToken
+    checkToken,
+    getSessionTokenFromCookie
 }
