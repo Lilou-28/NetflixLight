@@ -1,11 +1,13 @@
 const http = require('http')
 const fs = require('fs')
 const path = require("path");
+require("dotenv").config()
 const db = require("../internal/database")
 const { generateToken, checkToken } = require("../internal/token")
 
 const host = 'localhost'
 const port = 8080
+const tmdbBearerToken = process.env.TMDB_BEARER_TOKEN || ""
 
 const mimeTypes = {
     ".css": "text/css",
@@ -31,20 +33,6 @@ function getSessionTokenFromCookie(req) {
 
     return null
 }
-
-const url = 'https://api.themoviedb.org/3/authentication';
-const options = {
-  method: 'GET',
-  headers: {
-    accept: 'application/json',
-    Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0OGUxNTZhMjE1ZjFhMWI5YWQyNzc5ZTVhYmI1MzY2OCIsIm5iZiI6MTc3MzY3MzUzMi42OTEsInN1YiI6IjY5YjgxYzNjMzEzNzA4Y2QzMTA4ZjViOCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.uMP_4bqa9I7_zxjnYabRZJk93CfeJqeolS4GMgQI8Jk'
-  }
-};
-
-fetch(url, options)
-  .then(res => res.json())
-  .then(json => console.log(json))
-  .catch(err => console.error(err));
 
 const server = http.createServer((req, res) => {
     if (req.url === "/") {
@@ -250,7 +238,127 @@ const server = http.createServer((req, res) => {
             })
         })
     }
-    
+    else if ((req.url === "/api/popular-movies") && req.method === "GET") {
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Session manquante"}))
+            return
+        }
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+
+            if (!tmdbBearerToken) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
+                return
+            }
+            fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${tmdbBearerToken}&language=fr-FR&page=1`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`TMDB HTTP ${response.status}`)
+                }
+                return response.json()
+            })
+            .then(data => {
+                res.writeHead(200, {"Content-Type": "application/json"})
+                res.end(JSON.stringify(data))
+            })
+            .catch(error => {
+                console.error("Erreur TMDB:", error.message)
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Erreur lors de la récupération des films populaires"}))
+            })
+            console.log("TOKEN:", tmdbBearerToken)
+        })
+    }
+    else if ((req.url === "/api/popular-series") && req.method === "GET") {
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Session manquante"}))
+            return
+        }
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+
+            if (!tmdbBearerToken) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
+                return
+            }
+            fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${tmdbBearerToken}&language=fr-FR&page=1`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`TMDB HTTP ${response.status}`)
+                }
+                return response.json()
+            })
+            .then(data => {
+                res.writeHead(200, {"Content-Type": "application/json"})
+                res.end(JSON.stringify(data))
+            })
+            .catch(error => {
+                console.error("Erreur TMDB:", error.message)
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Erreur lors de la récupération des séries populaires"}))
+            })
+            console.log("TOKEN:", tmdbBearerToken)
+        })
+    }
+    else if ((req.url === "/api/") && req.method === "GET") {
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Session manquante"}))
+            return
+        }
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+
+            if (!tmdbBearerToken) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
+                return
+            }
+            fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${tmdbBearerToken}&language=fr-FR&page=1`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`TMDB HTTP ${response.status}`)
+                }
+                return response.json()
+            })
+            .then(data => {
+                res.writeHead(200, {"Content-Type": "application/json"})
+                res.end(JSON.stringify(data))
+            })
+            .catch(error => {
+                console.error("Erreur TMDB:", error.message)
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Erreur lors de la récupération des séries populaires"}))
+            })
+            console.log("TOKEN:", tmdbBearerToken)
+        })
+    }
+    else if (req.url === "/logout") {
+        res.writeHead(302, {
+            "Set-Cookie": `session_token=; Path=/; Max-Age=0; SameSite=Lax`,
+            "Location": "/"
+        })
+        res.end()
+    }
     else {
         res.writeHead(404, {"Content-Type" : "text/plain"})
         res.end("Page non trouvée")
