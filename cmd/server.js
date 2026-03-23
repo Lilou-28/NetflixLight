@@ -3,7 +3,8 @@ const fs = require('fs')
 const path = require("path");
 require("dotenv").config()
 const db = require("../internal/database")
-const { generateToken, checkToken, getSessionTokenFromCookie } = require("../internal/token")
+const { generateToken, checkToken, getSessionTokenFromCookie } = require("../internal/token");
+const { hashPassword, verifyPassword } = require('../internal/hashmdp');
 
 const host = 'localhost'
 const port = 8080
@@ -51,12 +52,6 @@ const server = http.createServer((req, res) => {
             })
         })
     }
-    else if (req.method === "GET" && req.url === "/login"){
-        fs.readFile(path.join(__dirname, "../web/templates/login.html"), (err,data) => {
-            res.writeHead(200, {"Content-Type" :  "text/html"})
-            res.end(data)
-        })
-    }
     else if (req.method === "GET" && req.url.startsWith("/token")) {
         fs.readFile(path.join(__dirname, "../web/templates/token.html"), (err, data) => {
             if (err) {
@@ -69,26 +64,49 @@ const server = http.createServer((req, res) => {
             res.end(data)
         })
     }
+    else if (req.method === "GET" && req.url === "/login"){
+        fs.readFile(path.join(__dirname, "../web/templates/login.html"), (err,data) => {
+            res.writeHead(200, {"Content-Type" :  "text/html"})
+            res.end(data)
+        })
+    }
     else if (req.method === "POST" && req.url === "/login") {
         let body = ""
         req.on("data", chunk => {
             body += chunk.toString()
         })
-        req.on("end", () => {
+        req.on("end", async () => {
             const params = new URLSearchParams(body)
             const username = params.get("username")
             const password = params.get("password")
 
-            const query = `SELECT * FROM users WHERE username = ? AND password = ?`
-            db.get(query, [username, password], (err, row) => {
+            const query = `SELECT * FROM users WHERE username = ?`
+            db.get(query, [username], async (err, row) => {
                 if (err) {
                     res.writeHead(500, {"Content-Type" : "text/plain"})
                     res.end("Erreur lors de la connexion")
                     return
                 }
-                if (row) {
+
+                if (!row) {
+                    res.writeHead(401, {"Content-Type" : "text/plain"})
+                    res.end("Nom d'utilisateur ou mot de passe incorrect")
+                    return
+                }
+
+                let isPasswordValid = false
+                try {
+                    isPasswordValid = await verifyPassword(password, row.password)
+                } catch (verifyErr) {
+                    console.error("Erreur lors de la verification du mot de passe:", verifyErr)
+                    res.writeHead(500, {"Content-Type" : "text/plain"})
+                    res.end("Erreur lors de la connexion")
+                    return
+                }
+
+                if (isPasswordValid) {
                     const token = generateToken()
-                    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+                    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
                     db.run(`INSERT INTO tokens (user_id, token, expires_at) VALUES (?, ?, ?)`, [row.id, token, expiresAt], (err) => {
                         if (err) {
                             console.error("Erreur lors de la création du token :", err)
@@ -98,7 +116,7 @@ const server = http.createServer((req, res) => {
                         }
 
                         res.writeHead(302, {
-                            "Set-Cookie": `session_token=${encodeURIComponent(token)}; Path=/; Max-Age=86400; SameSite=Lax`,
+                            "Set-Cookie": `session_token=${encodeURIComponent(token)}; Path=/; Max-Age=7200; SameSite=Lax`,
                             "Location": `/acceuil`
                         })
                         res.end()
@@ -149,7 +167,7 @@ const server = http.createServer((req, res) => {
         req.on("data", chunk => {
             body += chunk.toString()
         })
-        req.on("end", () => {
+        req.on("end", async () => {
             const params = new URLSearchParams(body)
             const name = params.get("name")
             const email = params.get("email")
@@ -161,7 +179,18 @@ const server = http.createServer((req, res) => {
                 res.end("Les mots de passe ne correspondent pas")
                 return
             }
-            db.registerUser(name, email, username, password, (err) => {
+
+            let hashedpassword = ""
+            try {
+                hashedpassword = await hashPassword(password)
+            } catch (hashErr) {
+                console.error("Erreur lors du hash du mot de passe:", hashErr)
+                res.writeHead(500, {"Content-Type" : "text/plain"})
+                res.end("Erreur lors de l'inscription")
+                return
+            }
+
+            db.registerUser(name, email, username, hashedpassword, (err) => {
                 if (err) {
                     if (err.message.includes("UNIQUE constraint failed")) {
                         res.writeHead(409, {"Content-Type" : "text/plain"})
