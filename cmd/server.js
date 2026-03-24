@@ -1,10 +1,12 @@
 const http = require('http')
 const fs = require('fs')
 const path = require("path");
+const { randomInt } = require("crypto");
 require("dotenv").config()
 const db = require("../internal/database")
 const { generateToken, checkToken, getSessionTokenFromCookie } = require("../internal/token");
 const { hashPassword, verifyPassword } = require('../internal/hashmdp');
+const { getMovies, getSeries } = require('../internal/appelAPI')
 
 const host = 'localhost'
 const port = 8080
@@ -274,13 +276,8 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
                 return
             }
-            fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${tmdbBearerToken}&language=fr-FR&page=1`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`TMDB HTTP ${response.status}`)
-                }
-                return response.json()
-            })
+            let page = randomInt(1, 501)
+            getMovies(tmdbBearerToken, page)
             .then(data => {
                 res.writeHead(200, {"Content-Type": "application/json"})
                 res.end(JSON.stringify(data))
@@ -311,13 +308,8 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
                 return
             }
-            fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${tmdbBearerToken}&language=fr-FR&page=1`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`TMDB HTTP ${response.status}`)
-                }
-                return response.json()
-            })
+            let page = randomInt(1, 501)
+            getSeries(tmdbBearerToken, page)
             .then(data => {
                 res.writeHead(200, {"Content-Type": "application/json"})
                 res.end(JSON.stringify(data))
@@ -348,13 +340,8 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
                 return
             }
-            fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${tmdbBearerToken}&language=fr-FR&page=1`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`TMDB HTTP ${response.status}`)
-                }
-                return response.json()
-            })
+            let page = randomInt(1, 501)
+            getMovies(tmdbBearerToken, page)
             .then(data => {
                 res.writeHead(200, {"Content-Type": "application/json"})
                 res.end(JSON.stringify(data))
@@ -362,7 +349,7 @@ const server = http.createServer((req, res) => {
             .catch(error => {
                 console.error("Erreur TMDB:", error.message)
                 res.writeHead(500, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "Erreur lors de la récupération des séries populaires"}))
+                res.end(JSON.stringify({error: "Erreur lors de la récupération des films populaires"}))
             })
         })
     }
