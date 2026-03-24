@@ -5,14 +5,6 @@ function initMoviesSwiper() {
     loop: totalSlides > 1,
     slidesPerView: 1.2,
     spaceBetween: 12,
-    pagination: {
-      el: ".movies-pagination",
-      clickable: true,
-    },
-    navigation: {
-      nextEl: ".movies-next",
-      prevEl: ".movies-prev",
-    },
     autoplay: {
       delay: 3000,
       disableOnInteraction: false,
@@ -42,7 +34,7 @@ async function loadMovies() {
       throw new Error(data.error || "Impossible de charger les films");
     }
 
-    const movies = Array.isArray(data.results) ? data.results.slice(0, 20) : [];
+    const movies = Array.isArray(data.results) ? data.results.slice(0, 40) : [];
     if (movies.length === 0) {
       throw new Error("Aucun film recu depuis l'API");
     }
@@ -59,7 +51,12 @@ async function loadMovies() {
         : "https://via.placeholder.com/500x750?text=No+Image";
       image.alt = movie.title || "Affiche film";
 
+      const title = document.createElement("div");
+      title.className = "slide-title";
+      title.textContent = movie.title || "Titre inconnu";
+
       slide.appendChild(image);
+      slide.appendChild(title);
       wrapper.appendChild(slide);
     }
 

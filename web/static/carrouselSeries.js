@@ -5,14 +5,7 @@ function initSeriesSwiper() {
     loop: totalSlides > 1,
     slidesPerView: 1.2,
     spaceBetween: 12,
-    pagination: {
-      el: ".series-pagination",
-      clickable: true,
-    },
-    navigation: {
-      nextEl: ".series-next",
-      prevEl: ".series-prev",
-    },
+
     autoplay: {
       delay: 3000,
       disableOnInteraction: false,
@@ -42,7 +35,7 @@ async function loadSeries() {
       throw new Error(data.error || "Impossible de charger les séries");
     }
 
-    const series = Array.isArray(data.results) ? data.results.slice(0, 20) : [];
+    const series = Array.isArray(data.results) ? data.results.slice(0, 40) : [];
     if (series.length === 0) {
       throw new Error("Aucune série reçue depuis l'API");
     }
@@ -59,7 +52,12 @@ async function loadSeries() {
         : "https://via.placeholder.com/500x750?text=No+Image";
       image.alt = serie.name || "Affiche série";
 
+      const title = document.createElement("div");
+      title.className = "slide-title";
+      title.textContent = serie.name || "Titre inconnu";
+
       slide.appendChild(image);
+      slide.appendChild(title);
       wrapper.appendChild(slide);
     }
 

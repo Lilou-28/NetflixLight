@@ -41,7 +41,17 @@ async function getSeries(credential, page = 1) {
     return fetchTmdbJson("tv/popular", credential, page)
 }
 
+async function getTopRatedMovies(credential, page = 1) {
+    return fetchTmdbJson("movie/top_rated", credential, page)
+}
+
+async function getTopRatedSeries(credential, page = 1) {
+    return fetchTmdbJson("tv/top_rated", credential, page)
+}
+
 module.exports = {
     getMovies,
     getSeries,
+    getTopRatedMovies,
+    getTopRatedSeries,
 }

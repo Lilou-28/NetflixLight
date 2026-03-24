@@ -7,7 +7,7 @@ body {
     overflow-x: hidden;
 }
 
-.swiper-movies, .swiper-series {
+.swiper-movies, .swiper-series, .swiper-top-rated-movies {
 	width: min(1100px, calc(100% - 40rem));
 	height: auto;
 	margin: 0 auto 2rem;
@@ -21,6 +21,9 @@ body {
 	height: auto;
 	border-radius: 10px;
 	overflow: hidden;
+	position: relative;
+	display: flex;
+	flex-direction: column;
 }
 
 .swiper-slide img {
@@ -31,25 +34,19 @@ body {
 	object-fit: cover;
 }
 
-.swiper-button-next, .swiper-button-prev {
-	color: #ffffff;
-	background: rgba(0, 0, 0, 0.45);
-	border-radius: 999px;
-	width: 34px;
-	height: 34px;
-}
-
-.swiper-button-next:after, .swiper-button-prev:after {
-	font-size: 14px;
-	font-weight: 700;
-}
-
-.swiper-pagination-bullet {
-	background: rgba(255, 255, 255, 0.5);
-}
-
-.swiper-pagination-bullet-active {
-	background: var(--accent);
+.slide-title {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	color: white;
+	padding: 2rem 0.5rem 1rem;
+	text-align: center;
+	font-size: 0.85rem;
+	font-weight: 500;
+	line-height: 1.3;
+	background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.3) 30%, rgba(0, 0, 0, 0.7) 70%, rgba(0, 0, 0, 1) 100%);
+	z-index: 1;
 }
 
 h3 {
