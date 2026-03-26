@@ -1,5 +1,5 @@
 function initGenreActionSwiper() {
-  const totalSlides = document.querySelectorAll("#genre-action-wrapper .swiper-slide").length;
+  const totalSlides = document.querySelectorAll("#movie-action-wrapper .swiper-slide").length;
 
   new Swiper(".genre-action-swiper", {
     loop: totalSlides > 1,
@@ -20,52 +20,51 @@ function initGenreActionSwiper() {
   });
 }
 
-async function loadTopRatedSeries() {
-  const wrapper = document.getElementById("top-rated-series-wrapper");
+async function loadMovieAction() {
+  const wrapper = document.getElementById("movie-action-wrapper");
   if (!wrapper) {
     return;
   }
 
   try {
-    const response = await fetch("/tv/top_rated", { credentials: "same-origin" });
+    const response = await fetch("/discover/movie-action", { credentials: "same-origin" });
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || "Impossible de charger les séries");
+      throw new Error(data.error || "Impossible de charger les films");
     }
 
-    const topRatedSeries = Array.isArray(data.results) ? data.results.slice(0, 40) : [];
-    if (topRatedSeries.length === 0) {
-      throw new Error("Aucune série top-rated reçue depuis l'API");
+    const MoviesAction = Array.isArray(data.results) ? data.results.slice(0, 40) : [];
+    if (MoviesAction.length === 0) {
+      throw new Error("Aucun film d'action reçue depuis l'API");
     }
 
     wrapper.innerHTML = "";
 
-    for (const series of topRatedSeries) {
+    for (const movie of MoviesAction) {
       const slide = document.createElement("div");
       slide.className = "swiper-slide";
 
       const image = document.createElement("img");
-      image.src = series.poster_path
-        ? `https://image.tmdb.org/t/p/w500${series.poster_path}`
+      image.src = movie.poster_path
+        ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
         : "https://via.placeholder.com/500x750?text=No+Image";
-      image.alt = series.name || "Affiche série";
+      image.alt = movie.name || "Affiche série";
 
       const title = document.createElement("div");
       title.className = "slide-title";
-      title.textContent = series.name || "Titre inconnu";
+      title.textContent = movie.title || movie.name || "Titre inconnu";
 
       slide.appendChild(image);
       wrapper.appendChild(slide);
-      title.appendChild(image);
       slide.appendChild(title);
     }
 
-    initTopRatedSeriesSwiper();
+    initGenreActionSwiper();
   } catch (error) {
     wrapper.innerHTML = `<div class="swiper-slide">${error.message}</div>`;
-    initTopRatedSeriesSwiper();
+    initGenreActionSwiper();
   }
 }
 
-document.addEventListener("DOMContentLoaded", loadTopRatedSeries);
+document.addEventListener("DOMContentLoaded", loadMovieAction);

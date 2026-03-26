@@ -1,29 +1,36 @@
-function buildTmdbRequest(pathname, credential, page = 1) {
-    const token = (credential || "").trim()
-    if (!token) {
-        throw new Error("TMDB_BEARER_TOKEN manquant")
-    }
+function buildTmdbRequest(pathname, credential, params = {}) {
+    const token = (credential || "").trim();
 
-    const isV3ApiKey = /^[a-f0-9]{32}$/i.test(token)
+    const baseUrl = `https://api.themoviedb.org/3/${pathname}`;
+
+    const searchParams = new URLSearchParams({
+        language: 'fr-FR',
+        ...params
+    });
+
+    const isV3ApiKey = /^[a-f0-9]{32}$/i.test(token);
+
     if (isV3ApiKey) {
+        searchParams.append('api_key', token);
         return {
-            url: `https://api.themoviedb.org/3/${pathname}?api_key=${encodeURIComponent(token)}&language=fr-FR&page=${page}`,
+            url: `${baseUrl}?${searchParams.toString()}`,
             options: {},
-        }
+        };
     }
 
     return {
-        url: `https://api.themoviedb.org/3/${pathname}?language=fr-FR&page=${page}`,
+        url: `${baseUrl}?${searchParams.toString()}`,
         options: {
             headers: {
                 Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
             },
         },
-    }
+    };
 }
 
-async function fetchTmdbJson(pathname, credential, page = 1) {
-    const request = buildTmdbRequest(pathname, credential, page)
+async function fetchTmdbJson(pathname, credential, params = {}) {
+    const request = buildTmdbRequest(pathname, credential, params)
     const response = await fetch(request.url, request.options)
 
     if (!response.ok) {
@@ -33,20 +40,34 @@ async function fetchTmdbJson(pathname, credential, page = 1) {
     return response.json()
 }
 
+
+
 async function getMovies(credential, page = 1) {
-    return fetchTmdbJson("movie/popular", credential, page)
+    return fetchTmdbJson("movie/popular", credential, { page })
 }
 
 async function getSeries(credential, page = 1) {
-    return fetchTmdbJson("tv/popular", credential, page)
+    return fetchTmdbJson("tv/popular", credential, { page })
 }
 
 async function getTopRatedMovies(credential, page = 1) {
-    return fetchTmdbJson("movie/top_rated", credential, page)
+    return fetchTmdbJson("movie/top_rated", credential, { page })
 }
 
 async function getTopRatedSeries(credential, page = 1) {
-    return fetchTmdbJson("tv/top_rated", credential, page)
+    return fetchTmdbJson("tv/top_rated", credential, { page })
+}
+
+async function getMoviesAction(credential, page = 1) {
+    return fetchTmdbJson("discover/movie", credential, { page: page, with_genres: 28 })
+}
+
+async function getMoviesFantasy(credential, page = 1) {
+    return fetchTmdbJson("discover/movie", credential, { page: page, with_genres: 14 })
+}
+
+async function searchmovie(credential, page = 1, query) {
+    return fetchTmdbJson("search/movie", credential, {page : page, query : query})
 }
 
 module.exports = {
@@ -54,4 +75,7 @@ module.exports = {
     getSeries,
     getTopRatedMovies,
     getTopRatedSeries,
+    getMoviesAction,
+    getMoviesFantasy,
+    searchmovie,
 }

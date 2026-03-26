@@ -18,7 +18,7 @@ body {
 	font-family: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
 	background: radial-gradient(circle at top, #1f1f1f, var(--bg));
 	color: var(--text);
-	background-image: url(Gemini_Generated_Image_u4nmsdu4nmsdu4nm.png);
+	background-image: url(../static/img/Gemini_Generated_Image_u4nmsdu4nmsdu4nm.png);
 	background-size: cover;
 	background-position: center;
 }

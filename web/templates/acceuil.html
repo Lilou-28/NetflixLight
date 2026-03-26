@@ -8,6 +8,19 @@
     <title>NetflixLight</title>
 </head>
 <body>
+    <div class="search-container">
+        <form id="search-form">
+            <input 
+                type="text" 
+                id="search-input" 
+                placeholder="Rechercher un film..." 
+                autocomplete="off"
+            >
+            <button type="submit" id="search-button">
+                <span>🔍</span>
+            </button>
+        </form>
+    </div>
     <h3>Films populaires</h3>
 	<div class="swiper swiper-movies movies-swiper">
 		<div class="swiper-wrapper" id="movies-wrapper"></div>
@@ -24,12 +37,23 @@
     <div class="swiper swiper-series top-rated-series-swiper">
 		<div class="swiper-wrapper" id="top-rated-series-wrapper"></div>
 	</div>
+    <h3>Film d'action</h3>
+    <div class="swiper swiper-movies genre-action-swiper">
+		<div class="swiper-wrapper" id="movie-action-wrapper"></div>
+	</div>
+    <h3>Film Fantasy</h3>
+    <div class="swiper swiper-movies genre-fantasy-swiper">
+		<div class="swiper-wrapper" id="movie-fantasy-wrapper"></div>
+	</div>
     <button type="button" id="logout-btn" onclick="window.location.href='/logout'">Logout</button>
     <button type="button" onclick="window.location.href='/'"><- retour </button>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-	<script src="../static/carrouselMovies.js"></script>
-	<script src="../static/carrouselSeries.js"></script>
-    <script src="../static/carrouselTopRatedMovies.js"></script>
-    <script src="../static/carrouselTopRatedTv.js"></script>
+	<script src="../static/script/carrouselMovies.js"></script>
+	<script src="../static/script/carrouselSeries.js"></script>
+    <script src="../static/script/carrouselTopRatedMovies.js"></script>
+    <script src="../static/script/carrouselTopRatedTv.js"></script>
+    <script src="../static/script/carrouselGenreAction.js"></script>
+    <script src="../static/script/carrouselGenreFantasy.js"></script>
+    <script src="../static/script/searchbar.js"></script>
 </body>
 </html>
