@@ -59,9 +59,20 @@ const server = http.createServer((req, res) => {
 
             (async () => {
                 try {
-                    const movie = contentType === "tv"
+                    let movie = contentType === "tv"
                         ? await getTvDetails(tmdbBearerToken, movieId)
                         : await getMovieDetails(tmdbBearerToken, movieId)
+
+                    // Some TMDB entries have an empty French overview; fallback to English.
+                    if (!movie.overview || !movie.overview.trim()) {
+                        const fallbackMovie = contentType === "tv"
+                            ? await getTvDetails(tmdbBearerToken, movieId, "en-US")
+                            : await getMovieDetails(tmdbBearerToken, movieId, "en-US");
+
+                        if (fallbackMovie.overview && fallbackMovie.overview.trim()) {
+                            movie = { ...movie, overview: fallbackMovie.overview };
+                        }
+                    }
 
                     fs.readFile(path.join(__dirname, "../web/templates/detail.html"), "utf8", (err, data) => {
                         if (err) {
@@ -93,7 +104,7 @@ const server = http.createServer((req, res) => {
                             : formattedRuntime;
 
                         const html = data
-                            .replace("{{title}}", movie.title || "Titre inconnu")
+                            .replace("{{title}}", movie.title || movie.original_name || "Titre inconnu")
                             .replace("{{overview}}", movie.overview || "Aucune description disponible")
                             .replace("{{poster}}", poster)
                             .replace("{{backdrop_path}}", backdrop)

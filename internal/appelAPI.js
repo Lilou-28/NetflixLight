@@ -70,12 +70,12 @@ async function searchmovie(credential, page = 1, query) {
     return fetchTmdbJson("search/movie", credential, {page : page, query : query})
 }
 
-async function getMovieDetails(credential, movieId) {
-    return fetchTmdbJson(`movie/${movieId}`, credential, { append_to_response: "credits" })
+async function getMovieDetails(credential, movieId, language = "fr-FR") {
+    return fetchTmdbJson(`movie/${movieId}`, credential, { append_to_response: "credits", language })
 }
 
-async function getTvDetails(credential, tvId) {
-    return fetchTmdbJson(`tv/${tvId}`, credential, { append_to_response: "credits" })
+async function getTvDetails(credential, tvId, language = "fr-FR") {
+    return fetchTmdbJson(`tv/${tvId}`, credential, { append_to_response: "credits", language })
 }
 
 module.exports = {
