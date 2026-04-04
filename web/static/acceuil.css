@@ -1,3 +1,14 @@
+.movie-slide-btn {
+	border: none;
+	background: none;
+	cursor: pointer;
+	padding: 0;
+	transition: transform 0.2s;
+}
+.movie-slide-btn:hover {
+	transform: scale(1.03);
+	box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
 body {
     margin: auto;
     min-height: 100vh;

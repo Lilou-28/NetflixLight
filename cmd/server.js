@@ -6,7 +6,7 @@ require("dotenv").config()
 const db = require("../internal/database")
 const { generateToken, checkToken, getSessionTokenFromCookie } = require("../internal/token");
 const { hashPassword, verifyPassword } = require('../internal/hashmdp');
-const { getMovies, getSeries, getTopRatedMovies, getTopRatedSeries, getMoviesAction, getMoviesFantasy, searchmovie } = require('../internal/appelAPI')
+const { getMovies, getSeries, getTopRatedMovies, getTopRatedSeries, getMoviesAction, getMoviesFantasy, searchmovie, getMovieDetails, getTvDetails } = require('../internal/appelAPI')
 
 const host = 'localhost'
 const port = 8080
@@ -32,27 +32,98 @@ const server = http.createServer((req, res) => {
             res.end(data)
         })
     }
-
-    else if (req.url === "/details"){
-        const sessionToken = getSessionTokenFromCookie(req)
+    else if (req.url.startsWith("/details")) {
+        const sessionToken = getSessionTokenFromCookie(req);
         if (!sessionToken) {
-            res.writeHead(302, {"Location": "/login"})
-            res.end()
-            return
+            res.writeHead(302, { "Location": "/login" });
+            res.end();
+            return;
         }
 
         checkToken(sessionToken, (isValid) => {
             if (!isValid) {
-                res.writeHead(302, {"Location": "/login"})
-                res.end()
-                return
+                res.writeHead(302, { "Location": "/login" });
+                res.end();
+                return;
             }
 
-            fs.readFile(path.join(__dirname, "../web/templates/detail.html"), (err,data) => {
-                res.writeHead(200, {"Content-Type" :  "text/html"})
-                res.end(data)
-            })
-        })
+            const requestUrl = new URL(req.url, `http://${req.headers.host || host}`);
+            const movieId = requestUrl.searchParams.get("id");
+            const contentType = requestUrl.searchParams.get("type") === "tv" ? "tv" : "movie";
+
+            if (!movieId) {
+                res.writeHead(400, { "Content-Type": "text/plain" });
+                res.end("Aucun id fourni");
+                return;
+            }
+
+            (async () => {
+                try {
+                    const movie = contentType === "tv"
+                        ? await getTvDetails(tmdbBearerToken, movieId)
+                        : await getMovieDetails(tmdbBearerToken, movieId)
+
+                    fs.readFile(path.join(__dirname, "../web/templates/detail.html"), "utf8", (err, data) => {
+                        if (err) {
+                            res.writeHead(500, { "Content-Type": "text/plain" });
+                            res.end("Erreur serveur");
+                            return;
+                        }
+
+                        const poster = movie.poster_path
+                            ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+                            : "https://via.placeholder.com/500x750?text=No+Image";
+                        
+                        const backdrop = movie.backdrop_path
+                            ? `https://image.tmdb.org/t/p/w500${movie.backdrop_path}`
+                            : "https://via.placeholder.com/500x750?text=No+Image";
+
+                        const runtimeMinutes = Number.isFinite(movie.runtime)
+                            ? movie.runtime
+                            : (Array.isArray(movie.episode_run_time) ? movie.episode_run_time[0] : null);
+
+                        const formattedRuntime = Number.isFinite(runtimeMinutes) && runtimeMinutes > 0
+                            ? `${Math.floor(runtimeMinutes / 60)}h ${String(runtimeMinutes % 60).padStart(2, "0")}min`
+                            : "Durée inconnue";
+
+                        const seasonsCount = Number.isFinite(movie.number_of_seasons) ? movie.number_of_seasons : null;
+                        const runtimeLabel = contentType === "tv" ? "Saisons" : "Durée";
+                        const runtimeValue = contentType === "tv"
+                            ? (seasonsCount === null ? "Nombre de saisons inconnu" : `${seasonsCount} saison${seasonsCount > 1 ? "s" : ""}`)
+                            : formattedRuntime;
+
+                        const html = data
+                            .replace("{{title}}", movie.title || "Titre inconnu")
+                            .replace("{{overview}}", movie.overview || "Aucune description disponible")
+                            .replace("{{poster}}", poster)
+                            .replace("{{backdrop_path}}", backdrop)
+                            .replace("{{vote_average}}", movie.vote_average || "Pas de note moyenne")
+                            .replace("{{vote_count}}", movie.vote_count || "Pas de nombre de votes")
+                            .replace("{{genres}}", Array.isArray(movie.genres) ? movie.genres.map(g => g.name).join(", ") : "Genres inconnus")
+                            .replace("{{release_date}}", movie.release_date || "Date de sortie inconnue")
+                            .replace("{{runtime_label}}", runtimeLabel)
+                            .replace("{{runtime}}", runtimeValue)
+                            .replace("{{cast}}", Array.isArray(movie.credits && movie.credits.cast)
+                                ? movie.credits.cast
+                                    .slice(0, 5)
+                                    .map(c => {
+                                        const cleanRole = typeof c.character === "string"
+                                            ? c.character.replace(/[()]/g, "").replace(/\s+/g, " ").trim()
+                                            : "";
+                                        const formattedRole = cleanRole.replace(/\s+voice$/i, " - voice");
+                                        return formattedRole ? `${c.name} (${formattedRole})` : c.name;
+                                    })
+                                    .join(", ")
+                                : "Casting inconnu");
+                        res.writeHead(200, { "Content-Type": "text/html" });
+                        res.end(html);
+                    });
+                } catch (error) {
+                    res.writeHead(500, { "Content-Type": "text/plain" });
+                    res.end("Erreur lors du chargement du film");
+                }
+            })();
+        });
     }
     else if (req.method === "GET" && req.url === "/login"){
         fs.readFile(path.join(__dirname, "../web/templates/login.html"), (err,data) => {

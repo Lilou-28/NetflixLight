@@ -43,8 +43,10 @@ async function loadSeries() {
     wrapper.innerHTML = "";
 
     for (const serie of series) {
-      const slide = document.createElement("div");
-      slide.className = "swiper-slide";
+      const slide = document.createElement("button");
+      slide.className = "swiper-slide movie-slide-btn";
+      slide.type = "button";
+      slide.onclick = () => window.location.href = '/details?type=tv&id=' + serie.id;
 
       const image = document.createElement("img");
       image.src = serie.poster_path

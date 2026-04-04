@@ -42,8 +42,10 @@ async function loadTopRatedSeries() {
     wrapper.innerHTML = "";
 
     for (const series of topRatedSeries) {
-        const slide = document.createElement("div");
-        slide.className = "swiper-slide";
+        const slide = document.createElement("button");
+        slide.className = "swiper-slide movie-slide-btn";
+        slide.type = "button";
+        slide.onclick = () => window.location.href = '/details?type=tv&id=' + series.id;
 
         const image = document.createElement("img");
         image.src = series.poster_path

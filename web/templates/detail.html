@@ -8,9 +8,16 @@
 </head>
 <body>
 	<main class="hero">
-		<h1>NetflixLight</h1>
-		<p>Pages details fonctionnel !</p>
-		<button type="button" onclick="window.location.href='/'">Retour accueil</button>
+		<img src="{{backdrop_path}}" alt="Banner du film" />
+		<h1>{{title}}</h1>
+		<img src="{{poster}}" alt="Affiche du film" />
+		<p>{{overview}}</p>
+		<p>Genres : {{genres}}</p>
+		<p>Date de sortie : {{release_date}}</p>
+		<p>Note : {{vote_average}} ({{vote_count}} avis)</p>
+		<p>{{runtime_label}} : {{runtime}}</p>
+		<p>Casting : {{cast}}</p>
+		<button type="button" onclick="window.location.href='/acceuil'">Retour accueil</button>
 	</main>
 </body>
 </html>

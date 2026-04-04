@@ -42,8 +42,10 @@ async function loadMovies() {
     wrapper.innerHTML = "";
 
     for (const movie of movies) {
-      const slide = document.createElement("div");
-      slide.className = "swiper-slide";
+      const button = document.createElement("button");
+      button.className = "swiper-slide movie-slide-btn";
+      button.type = "button";
+      button.onclick = () => window.location.href = '/details?type=movie&id=' + movie.id;
 
       const image = document.createElement("img");
       image.src = movie.poster_path
@@ -55,9 +57,9 @@ async function loadMovies() {
       title.className = "slide-title";
       title.textContent = movie.title || "Titre inconnu";
 
-      slide.appendChild(image);
-      slide.appendChild(title);
-      wrapper.appendChild(slide);
+      button.appendChild(image);
+      button.appendChild(title);
+      wrapper.appendChild(button);
     }
 
     initMoviesSwiper();

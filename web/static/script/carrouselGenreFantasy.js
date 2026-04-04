@@ -42,8 +42,10 @@ async function loadMovieFantasy() {
     wrapper.innerHTML = "";
 
     for (const movie of MoviesFantasy) {
-      const slide = document.createElement("div");
-      slide.className = "swiper-slide";
+      const slide = document.createElement("button");
+      slide.className = "swiper-slide movie-slide-btn";
+      slide.type = "button";
+      slide.onclick = () => window.location.href = '/details?type=movie&id=' + movie.id;
 
       const image = document.createElement("img");
       image.src = movie.poster_path
