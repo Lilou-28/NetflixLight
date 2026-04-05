@@ -4,9 +4,12 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/detail.css">
-	<title>NetflixLight - details </title>
+    <link rel="stylesheet" href="/static/header.css">
+	<title>NetflixLight - details</title>
 </head>
 <body>
+	<header id="main-header"></header>
+
 	<main class="hero">
 		<img src="{{backdrop_path}}" alt="Banner du film" />
 		<h1>{{title}}</h1>
@@ -17,7 +20,19 @@
 		<p>Note : {{vote_average}} ({{vote_count}} avis)</p>
 		<p>{{runtime_label}} : {{runtime}}</p>
 		<p>Casting : {{cast}}</p>
-		<button type="button" onclick="window.location.href='/acceuil'">Retour accueil</button>
 	</main>
+
+	<script type="module">
+		import { initHeader, updateHeaderAuth } from '/static/js/header.js';
+
+		initHeader();
+
+		const user = JSON.parse(localStorage.getItem('nl_user') || 'null');
+		updateHeaderAuth({ isLoggedIn: !!user, username: user?.username ?? 'U' });
+
+		document.addEventListener('nl:auth:logout', () => {
+			window.location.href = '/logout';
+		});
+	</script>
 </body>
 </html>
