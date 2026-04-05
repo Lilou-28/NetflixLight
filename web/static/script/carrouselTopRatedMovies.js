@@ -1,10 +1,12 @@
 function initTopRatedMoviesSwiper() {
   const totalSlides = document.querySelectorAll("#top-rated-movies-wrapper .swiper-slide").length;
+  const canLoop = totalSlides > 3;
 
   new Swiper(".top-rated-movies-swiper", {
-    loop: totalSlides > 1,
+    loop: canLoop,
     slidesPerView: 1.2,
     spaceBetween: 12,
+    watchOverflow: true,
     autoplay: {
       delay: 3000,
       disableOnInteraction: false,

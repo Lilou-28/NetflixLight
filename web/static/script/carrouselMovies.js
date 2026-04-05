@@ -1,10 +1,12 @@
 function initMoviesSwiper() {
-  const totalSlides = document.querySelectorAll("#movies-wrapper .swiper-slide").length;
+  const totalSlides = document.querySelectorAll("#popular-movies-wrapper .swiper-slide").length;
+  const canLoop = totalSlides > 3;
 
-  new Swiper(".movies-swiper", {
-    loop: totalSlides > 1,
+  new Swiper(".popular-movies-swiper", {
+    loop: canLoop,
     slidesPerView: 1.2,
     spaceBetween: 12,
+    watchOverflow: true,
     autoplay: {
       delay: 3000,
       disableOnInteraction: false,
@@ -21,7 +23,7 @@ function initMoviesSwiper() {
 }
 
 async function loadMovies() {
-  const wrapper = document.getElementById("movies-wrapper");
+  const wrapper = document.getElementById("popular-movies-wrapper");
   if (!wrapper) {
     return;
   }

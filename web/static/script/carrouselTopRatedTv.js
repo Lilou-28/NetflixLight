@@ -1,10 +1,12 @@
 function initTopRatedSeriesSwiper() {
   const totalSlides = document.querySelectorAll("#top-rated-series-wrapper .swiper-slide").length;
+  const canLoop = totalSlides > 3;
 
   new Swiper(".top-rated-series-swiper", {
-    loop: totalSlides > 1,
+    loop: canLoop,
     slidesPerView: 1.2,
     spaceBetween: 12,
+    watchOverflow: true,
     autoplay: {
       delay: 3000,
       disableOnInteraction: false,

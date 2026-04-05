@@ -6,7 +6,7 @@ require("dotenv").config()
 const db = require("../internal/database")
 const { generateToken, checkToken, getSessionTokenFromCookie } = require("../internal/token");
 const { hashPassword, verifyPassword } = require('../internal/hashmdp');
-const { getMovies, getSeries, getTopRatedMovies, getTopRatedSeries, getMoviesAction, getMoviesFantasy, searchmovie, getMovieDetails, getTvDetails } = require('../internal/appelAPI')
+const { getMovies, getSeries, getTopRatedMovies, getTopRatedSeries, getMoviesAction, getMoviesFantasy, searchmovie, getMovieDetails, getTvDetails, getTvTrendingDay, getTvTrendingWeek } = require('../internal/appelAPI')
 
 const host = 'localhost'
 const port = 8080
@@ -550,7 +550,70 @@ const server = http.createServer((req, res) => {
             })
         })
     }
-
+    else if (req.url === "/trending/day" && req.method === "GET"){
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify
+            ({error: "Session manquante"}))
+            return
+        }
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+            if (!tmdbBearerToken) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
+                return
+            }
+            let page = randomInt(1, 500)
+            getTvTrendingDay(tmdbBearerToken, page)
+            .then(data => {
+                res.writeHead(200, {"Content-Type": "application/json"})
+                res.end(JSON.stringify(data))
+            })
+            .catch(error => {
+                console.error("Erreur TMDB:", error.message)
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Erreur lors de la récupération des films d'actions"}))
+            })
+        })
+    }
+    else if (req.url === "/trending/week" && req.method === "GET"){
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify
+            ({error: "Session manquante"}))
+            return
+        }
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+            if (!tmdbBearerToken) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
+                return
+            }
+            let page = randomInt(1, 500)
+            getTvTrendingWeek(tmdbBearerToken, page)
+            .then(data => {
+                res.writeHead(200, {"Content-Type": "application/json"})
+                res.end(JSON.stringify(data))
+            })
+            .catch(error => {
+                console.error("Erreur TMDB:", error.message)
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Erreur lors de la récupération des films d'actions"}))
+            })
+        })
+    }
     else if (req.url === "/logout") {
         res.writeHead(302, {
             "Set-Cookie": `session_token=; Path=/; Max-Age=0; SameSite=Lax`,

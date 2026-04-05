@@ -78,6 +78,14 @@ async function getTvDetails(credential, tvId, language = "fr-FR") {
     return fetchTmdbJson(`tv/${tvId}`, credential, { append_to_response: "credits", language })
 }
 
+async function getTvTrendingDay(credential, page = 1, language = "fr-FR") {
+    return fetchTmdbJson(`trending/movie/day`, credential, { language, page })
+}
+
+async function getTvTrendingWeek(credential, page = 1, language = "fr-FR") {
+    return fetchTmdbJson(`trending/movie/week`, credential, { language, page })
+}
+
 module.exports = {
     getMovies,
     getSeries,
@@ -88,4 +96,6 @@ module.exports = {
     searchmovie,
     getMovieDetails,
     getTvDetails,
+    getTvTrendingDay,
+    getTvTrendingWeek
 }

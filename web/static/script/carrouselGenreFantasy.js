@@ -1,10 +1,12 @@
 function initGenreFantasySwiper() {
   const totalSlides = document.querySelectorAll("#movie-fantasy-wrapper .swiper-slide").length;
+  const canLoop = totalSlides > 3;
 
   new Swiper(".genre-fantasy-swiper", {
-    loop: totalSlides > 1,
+    loop: canLoop,
     slidesPerView: 1.2,
     spaceBetween: 12,
+    watchOverflow: true,
     autoplay: {
       delay: 3000,
       disableOnInteraction: false,
