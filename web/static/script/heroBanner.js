@@ -4,6 +4,7 @@ const heroOverview = document.getElementById("hero-overview");
 const heroDetailsBtn = document.getElementById("hero-details-btn");
 
 let heroMovieId = null;
+let heroMediaType = "movie";
 
 const FALLBACK_BACKDROP =
   "data:image/svg+xml;charset=UTF-8," +
@@ -18,23 +19,20 @@ function pickMovie(results) {
 }
 
 async function getHeroMovie() {
-  const endpoints = ["/trending/day", "/trending/week"];
-
-  for (const endpoint of endpoints) {
-    try {
-      const response = await fetch(endpoint, { credentials: "same-origin" });
-      if (!response.ok) continue;
-      const data = await response.json();
-      const results = Array.isArray(data.results) ? data.results : [];
-      if (!results.length) continue;
-      const picked = pickMovie(results);
-      if (picked) return picked;
-    } catch (_err) {
-      // Try next endpoint silently.
+  try {
+    const response = await fetch("/api/trending-mixed", { credentials: "same-origin" });
+    if (!response.ok) {
+      return null;
     }
+    const data = await response.json();
+    const results = Array.isArray(data.results) ? data.results : [];
+    if (!results.length) {
+      return null;
+    }
+    return pickMovie(results);
+  } catch (_err) {
+    return null;
   }
-
-  return null;
 }
 
 function renderHero(movie) {
@@ -52,6 +50,7 @@ function renderHero(movie) {
   const overview = movie.overview || "Pas de description disponible.";
 
   heroMovieId = movie.id;
+  heroMediaType = movie.media_type === "tv" ? "tv" : "movie";
   heroTitle.textContent = title;
   heroOverview.textContent = overview;
 
@@ -70,7 +69,7 @@ async function loadHeroBanner() {
 if (heroDetailsBtn) {
   heroDetailsBtn.addEventListener("click", () => {
     if (!heroMovieId) return;
-    window.location.href = `/details?type=movie&id=${heroMovieId}`;
+    window.location.href = `/details?type=${heroMediaType}&id=${heroMovieId}`;
   });
 }
 

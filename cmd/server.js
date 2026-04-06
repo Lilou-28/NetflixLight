@@ -6,7 +6,7 @@ require("dotenv").config()
 const db = require("../internal/database")
 const { generateToken, checkToken, getSessionTokenFromCookie } = require("../internal/token");
 const { hashPassword, verifyPassword } = require('../internal/hashmdp');
-const { getMovies, getSeries, getTopRatedMovies, getTopRatedSeries, getMoviesAction, getMoviesFantasy, searchmovie, getMovieDetails, getTvDetails, getTvTrendingDay, getTvTrendingWeek } = require('../internal/appelAPI')
+const { getMovies, getSeries, getTopRatedMovies, getTopRatedSeries, getMoviesAction, getMoviesFantasy, getSeriesActionAdventure, getSeriesSciFiFantasy, searchmovie, getMovieDetails, getTvDetails, getTrendingAllWeek, getSimilar } = require('../internal/appelAPI')
 
 const host = 'localhost'
 const port = 8080
@@ -22,6 +22,26 @@ const mimeTypes = {
     ".ico": "image/x-icon",
     ".html": "text/html",
 };
+
+function shuffleArray(items) {
+    const array = [...items]
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        const tmp = array[i]
+        array[i] = array[j]
+        array[j] = tmp
+    }
+    return array
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;")
+}
 
 
 
@@ -103,6 +123,46 @@ const server = http.createServer((req, res) => {
                             ? (seasonsCount === null ? "Nombre de saisons inconnu" : `${seasonsCount} saison${seasonsCount > 1 ? "s" : ""}`)
                             : formattedRuntime;
 
+                        const castMembers = Array.isArray(movie.credits && movie.credits.cast)
+                            ? movie.credits.cast.slice(0, 5)
+                            : [];
+
+                        const castSummary = castMembers.length
+                            ? castMembers
+                                .map(c => {
+                                    const cleanRole = typeof c.character === "string"
+                                        ? c.character.replace(/[()]/g, "").replace(/\s+/g, " ").trim()
+                                        : "";
+                                    const formattedRole = cleanRole.replace(/\s+voice$/i, " - voice");
+                                    return formattedRole ? `${escapeHtml(c.name)} (${escapeHtml(formattedRole)})` : escapeHtml(c.name);
+                                })
+                                .join(", ")
+                            : "Casting inconnu";
+
+                        const castCards = castMembers.length
+                            ? castMembers
+                                .map(c => {
+                                    const actorName = escapeHtml(c.name || "Acteur inconnu");
+                                    const cleanRole = typeof c.character === "string"
+                                        ? c.character.replace(/[()]/g, "").replace(/\s+/g, " ").trim()
+                                        : "";
+                                    const formattedRole = cleanRole.replace(/\s+voice$/i, " - voice");
+                                    const roleText = escapeHtml(formattedRole || "Rôle inconnu");
+                                    const portrait = c.profile_path
+                                        ? `https://image.tmdb.org/t/p/w185${c.profile_path}`
+                                        : "https://via.placeholder.com/185x278?text=No+Image";
+
+                                    return `
+                                        <article class="cast-card">
+                                            <img src="${portrait}" alt="${actorName}" class="cast-card__image" />
+                                            <h3 class="cast-card__name">${actorName}</h3>
+                                            <p class="cast-card__role">${roleText}</p>
+                                        </article>
+                                    `;
+                                })
+                                .join("")
+                            : `<p class="cast-empty">Casting inconnu</p>`;
+
                         const html = data
                             .replace("{{title}}", movie.title || movie.original_name || "Titre inconnu")
                             .replace("{{overview}}", movie.overview || "Aucune description disponible")
@@ -114,18 +174,8 @@ const server = http.createServer((req, res) => {
                             .replace("{{release_date}}", movie.release_date || "Date de sortie inconnue")
                             .replace("{{runtime_label}}", runtimeLabel)
                             .replace("{{runtime}}", runtimeValue)
-                            .replace("{{cast}}", Array.isArray(movie.credits && movie.credits.cast)
-                                ? movie.credits.cast
-                                    .slice(0, 5)
-                                    .map(c => {
-                                        const cleanRole = typeof c.character === "string"
-                                            ? c.character.replace(/[()]/g, "").replace(/\s+/g, " ").trim()
-                                            : "";
-                                        const formattedRole = cleanRole.replace(/\s+voice$/i, " - voice");
-                                        return formattedRole ? `${c.name} (${formattedRole})` : c.name;
-                                    })
-                                    .join(", ")
-                                : "Casting inconnu");
+                            .replace("{{cast}}", castSummary)
+                            .replace("{{cast_cards}}", castCards);
                         res.writeHead(200, { "Content-Type": "text/html" });
                         res.end(html);
                     });
@@ -136,6 +186,7 @@ const server = http.createServer((req, res) => {
             })();
         });
     }
+    
     else if (req.method === "GET" && req.url === "/login"){
         fs.readFile(path.join(__dirname, "../web/templates/login.html"), (err,data) => {
             res.writeHead(200, {"Content-Type" :  "text/html"})
@@ -281,6 +332,54 @@ const server = http.createServer((req, res) => {
             })
         })
     }
+    else if (req.method === "GET" && req.url.startsWith("/api/tmdb/details")) {
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Session manquante"}))
+            return
+        }
+
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+
+            if (!tmdbBearerToken) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
+                return
+            }
+
+            const requestUrl = new URL(req.url, `http://${req.headers.host || host}`)
+            const movieId = requestUrl.searchParams.get("id")
+            const contentType = requestUrl.searchParams.get("type") === "tv" ? "tv" : "movie"
+            const language = requestUrl.searchParams.get("language") || "fr-FR"
+
+            if (!movieId) {
+                res.writeHead(400, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Aucun id fourni"}))
+                return
+            }
+
+            const loadDetails = contentType === "tv"
+                ? getTvDetails(tmdbBearerToken, movieId, language)
+                : getMovieDetails(tmdbBearerToken, movieId, language)
+
+            loadDetails
+                .then(details => {
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify(details))
+                })
+                .catch(error => {
+                    console.error("Erreur TMDB:", error.message)
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur lors du chargement des détails TMDB"}))
+                })
+        })
+    }
     else if (req.url && req.url.startsWith("/static/")) {
         const filePath = path.join(__dirname, "../web", req.url)
         const ext = path.extname(filePath).toLowerCase()
@@ -327,13 +426,14 @@ const server = http.createServer((req, res) => {
             })
         })
     }
-    else if ((req.url === "/api/popular-movies") && req.method === "GET") {
+    else if (req.url === "/api/popular-mixed" && req.method === "GET") {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
             res.writeHead(401, {"Content-Type": "application/json"})
             res.end(JSON.stringify({error: "Session manquante"}))
             return
         }
+
         checkToken(sessionToken, (isValid) => {
             if (!isValid) {
                 res.writeHead(401, {"Content-Type": "application/json"})
@@ -346,26 +446,39 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
                 return
             }
-            let page = randomInt(1, 501)
-            getMovies(tmdbBearerToken, page)
-            .then(data => {
-                res.writeHead(200, {"Content-Type": "application/json"})
-                res.end(JSON.stringify(data))
-            })
-            .catch(error => {
-                console.error("Erreur TMDB:", error.message)
-                res.writeHead(500, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "Erreur lors de la récupération des films populaires"}))
-            })
+
+            const page = randomInt(1, 501)
+            Promise.all([
+                getMovies(tmdbBearerToken, page),
+                getSeries(tmdbBearerToken, page),
+            ])
+                .then(([moviesData, seriesData]) => {
+                    const movies = Array.isArray(moviesData.results)
+                        ? moviesData.results.map((item) => ({ ...item, media_type: "movie" }))
+                        : []
+                    const series = Array.isArray(seriesData.results)
+                        ? seriesData.results.map((item) => ({ ...item, media_type: "tv" }))
+                        : []
+
+                    const results = shuffleArray([...movies, ...series]).slice(0, 40)
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({ results }))
+                })
+                .catch((error) => {
+                    console.error("Erreur TMDB:", error.message)
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur lors de la récupération du carrousel populaire mixte"}))
+                })
         })
     }
-    else if ((req.url === "/api/popular-series") && req.method === "GET") {
+    else if (req.url === "/api/trending-mixed" && req.method === "GET") {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
             res.writeHead(401, {"Content-Type": "application/json"})
             res.end(JSON.stringify({error: "Session manquante"}))
             return
         }
+
         checkToken(sessionToken, (isValid) => {
             if (!isValid) {
                 res.writeHead(401, {"Content-Type": "application/json"})
@@ -378,26 +491,32 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
                 return
             }
-            let page = randomInt(1, 501)
-            getSeries(tmdbBearerToken, page)
-            .then(data => {
-                res.writeHead(200, {"Content-Type": "application/json"})
-                res.end(JSON.stringify(data))
-            })
-            .catch(error => {
-                console.error("Erreur TMDB:", error.message)
-                res.writeHead(500, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "Erreur lors de la récupération des séries populaires"}))
-            })
+
+            const page = randomInt(1, 501)
+            getTrendingAllWeek(tmdbBearerToken, page)
+                .then((data) => {
+                    const items = Array.isArray(data.results)
+                        ? data.results.filter((item) => item && (item.media_type === "movie" || item.media_type === "tv"))
+                        : []
+                    const results = shuffleArray(items).slice(0, 40)
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({ results }))
+                })
+                .catch((error) => {
+                    console.error("Erreur TMDB:", error.message)
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur lors de la récupération du carrousel tendance mixte"}))
+                })
         })
     }
-    else if ((req.url === "/api/") && req.method === "GET") {
+    else if (req.url === "/api/top-rated-mixed" && req.method === "GET") {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
             res.writeHead(401, {"Content-Type": "application/json"})
             res.end(JSON.stringify({error: "Session manquante"}))
             return
         }
+
         checkToken(sessionToken, (isValid) => {
             if (!isValid) {
                 res.writeHead(401, {"Content-Type": "application/json"})
@@ -410,81 +529,76 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
                 return
             }
-            let page = randomInt(1, 501)
-            getMovies(tmdbBearerToken, page)
-            .then(data => {
-                res.writeHead(200, {"Content-Type": "application/json"})
-                res.end(JSON.stringify(data))
-            })
-            .catch(error => {
-                console.error("Erreur TMDB:", error.message)
-                res.writeHead(500, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "Erreur lors de la récupération des films populaires"}))
-            })
+
+            const page = randomInt(1, 143)
+            Promise.all([
+                getTopRatedMovies(tmdbBearerToken, page),
+                getTopRatedSeries(tmdbBearerToken, page),
+            ])
+                .then(([moviesData, seriesData]) => {
+                    const movies = Array.isArray(moviesData.results)
+                        ? moviesData.results.map((item) => ({ ...item, media_type: "movie" }))
+                        : []
+                    const series = Array.isArray(seriesData.results)
+                        ? seriesData.results.map((item) => ({ ...item, media_type: "tv" }))
+                        : []
+                    const results = shuffleArray([...movies, ...series]).slice(0, 40)
+
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({ results }))
+                })
+                .catch((error) => {
+                    console.error("Erreur TMDB:", error.message)
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur lors de la récupération du carrousel mieux note mixte"}))
+                })
         })
     }
-    else if (req.url === "/movie/top_rated" && req.method === "GET") {
+    else if (req.url.startsWith("/api/similar") && req.method === "GET") {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
             res.writeHead(401, {"Content-Type": "application/json"})
             res.end(JSON.stringify({error: "Session manquante"}))
             return
         }
+
         checkToken(sessionToken, (isValid) => {
             if (!isValid) {
                 res.writeHead(401, {"Content-Type": "application/json"})
                 res.end(JSON.stringify({error: "Session invalide"}))
                 return
             }
-            
+
             if (!tmdbBearerToken) {
                 res.writeHead(500, {"Content-Type": "application/json"})
                 res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
                 return
             }
-            let page = randomInt(1, 501)
-            getTopRatedMovies(tmdbBearerToken, page)
-            .then(data => {
-                res.writeHead(200, {"Content-Type": "application/json"})
-                res.end(JSON.stringify(data))
-            })
-            .catch(error => {
-                console.error("Erreur TMDB:", error.message)
-                res.writeHead(500, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "Erreur lors de la récupération des films les mieux notés"}))
-            })
-        })
-    }
-    else if (req.url === "/tv/top_rated" && req.method === "GET") {
-        const sessionToken = getSessionTokenFromCookie(req)
-        if (!sessionToken) {
-            res.writeHead(401, {"Content-Type": "application/json"})
-            res.end(JSON.stringify
-            ({error: "Session manquante"}))
-            return
-        }
-        checkToken(sessionToken, (isValid) => {
-            if (!isValid) {
-                res.writeHead(401, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "Session invalide"}))
+
+            const requestUrl = new URL(req.url, `http://${req.headers.host || host}`)
+            const movieId = requestUrl.searchParams.get("id")
+            const pageParam = Number.parseInt(requestUrl.searchParams.get("page") || "1", 10)
+            const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1
+
+            if (!movieId) {
+                res.writeHead(400, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Aucun id fourni"}))
                 return
             }
-            if (!tmdbBearerToken) {
-                res.writeHead(500, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
-                return
-            }
-            let page = randomInt(1, 143)
-            getTopRatedSeries(tmdbBearerToken, page)
-            .then(data => {
-                res.writeHead(200, {"Content-Type": "application/json"})
-                res.end(JSON.stringify(data))
-            })
-            .catch(error => {
-                console.error("Erreur TMDB:", error.message)
-                res.writeHead(500, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "Erreur lors de la récupération des séries les mieux notées"}))
-            })
+
+            getSimilar(tmdbBearerToken, movieId, page)
+                .then((data) => {
+                    const results = Array.isArray(data.results)
+                        ? data.results.map((item) => ({ ...item, media_type: "movie" }))
+                        : []
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({ results }))
+                })
+                .catch((error) => {
+                    console.error("Erreur TMDB:", error.message)
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur lors de la récupération des contenus similaires"}))
+                })
         })
     }
     else if (req.url === "/discover/movie-action" && req.method === "GET"){
@@ -507,15 +621,25 @@ const server = http.createServer((req, res) => {
                 return
             }
             let page = randomInt(1, 500)
-            getMoviesAction(tmdbBearerToken, page)
-            .then(data => {
+            Promise.all([
+                getMoviesAction(tmdbBearerToken, page),
+                getSeriesActionAdventure(tmdbBearerToken, page),
+            ])
+            .then(([moviesData, seriesData]) => {
+                const movies = Array.isArray(moviesData.results)
+                    ? moviesData.results.map((item) => ({ ...item, media_type: "movie" }))
+                    : []
+                const series = Array.isArray(seriesData.results)
+                    ? seriesData.results.map((item) => ({ ...item, media_type: "tv" }))
+                    : []
+
                 res.writeHead(200, {"Content-Type": "application/json"})
-                res.end(JSON.stringify(data))
+                res.end(JSON.stringify({ results: shuffleArray([...movies, ...series]) }))
             })
             .catch(error => {
                 console.error("Erreur TMDB:", error.message)
                 res.writeHead(500, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "Erreur lors de la récupération des films d'actions"}))
+                res.end(JSON.stringify({error: "Erreur lors de la récupération des contenus action"}))
             })
         })
     }else if (req.url === "/discover/movie-fantasy" && req.method === "GET"){
@@ -538,79 +662,25 @@ const server = http.createServer((req, res) => {
                 return
             }
             let page = randomInt(1, 500)
-            getMoviesFantasy(tmdbBearerToken, page)
-            .then(data => {
+            Promise.all([
+                getMoviesFantasy(tmdbBearerToken, page),
+                getSeriesSciFiFantasy(tmdbBearerToken, page),
+            ])
+            .then(([moviesData, seriesData]) => {
+                const movies = Array.isArray(moviesData.results)
+                    ? moviesData.results.map((item) => ({ ...item, media_type: "movie" }))
+                    : []
+                const series = Array.isArray(seriesData.results)
+                    ? seriesData.results.map((item) => ({ ...item, media_type: "tv" }))
+                    : []
+
                 res.writeHead(200, {"Content-Type": "application/json"})
-                res.end(JSON.stringify(data))
+                res.end(JSON.stringify({ results: shuffleArray([...movies, ...series]) }))
             })
             .catch(error => {
                 console.error("Erreur TMDB:", error.message)
                 res.writeHead(500, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "Erreur lors de la récupération des films d'actions"}))
-            })
-        })
-    }
-    else if (req.url === "/trending/day" && req.method === "GET"){
-        const sessionToken = getSessionTokenFromCookie(req)
-        if (!sessionToken) {
-            res.writeHead(401, {"Content-Type": "application/json"})
-            res.end(JSON.stringify
-            ({error: "Session manquante"}))
-            return
-        }
-        checkToken(sessionToken, (isValid) => {
-            if (!isValid) {
-                res.writeHead(401, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "Session invalide"}))
-                return
-            }
-            if (!tmdbBearerToken) {
-                res.writeHead(500, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
-                return
-            }
-            let page = randomInt(1, 500)
-            getTvTrendingDay(tmdbBearerToken, page)
-            .then(data => {
-                res.writeHead(200, {"Content-Type": "application/json"})
-                res.end(JSON.stringify(data))
-            })
-            .catch(error => {
-                console.error("Erreur TMDB:", error.message)
-                res.writeHead(500, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "Erreur lors de la récupération des films d'actions"}))
-            })
-        })
-    }
-    else if (req.url === "/trending/week" && req.method === "GET"){
-        const sessionToken = getSessionTokenFromCookie(req)
-        if (!sessionToken) {
-            res.writeHead(401, {"Content-Type": "application/json"})
-            res.end(JSON.stringify
-            ({error: "Session manquante"}))
-            return
-        }
-        checkToken(sessionToken, (isValid) => {
-            if (!isValid) {
-                res.writeHead(401, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "Session invalide"}))
-                return
-            }
-            if (!tmdbBearerToken) {
-                res.writeHead(500, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
-                return
-            }
-            let page = randomInt(1, 500)
-            getTvTrendingWeek(tmdbBearerToken, page)
-            .then(data => {
-                res.writeHead(200, {"Content-Type": "application/json"})
-                res.end(JSON.stringify(data))
-            })
-            .catch(error => {
-                console.error("Erreur TMDB:", error.message)
-                res.writeHead(500, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "Erreur lors de la récupération des films d'actions"}))
+                res.end(JSON.stringify({error: "Erreur lors de la récupération des contenus fantasy"}))
             })
         })
     }

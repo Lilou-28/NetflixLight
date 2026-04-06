@@ -3,11 +3,74 @@
 	background: none;
 	cursor: pointer;
 	padding: 0;
-	transition: transform 0.2s;
+	transition: transform 0.2s, box-shadow 0.2s;
+	position: relative;
+	overflow: hidden;
 }
 .movie-slide-btn:hover {
 	transform: scale(1.03);
 	box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+.movie-slide-btn:focus-visible {
+	outline: 2px solid #e50914;
+	outline-offset: 3px;
+}
+.movie-slide-btn img {
+	transition: transform 0.35s ease, filter 0.35s ease;
+}
+.movie-slide-btn:focus-visible img {
+	transform: scale(1.06);
+	filter: saturate(1.06) brightness(0.92);
+}
+.movie-slide-btn__hover {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+	gap: 0.35rem;
+	padding: 1rem;
+	background: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.72) 55%, rgba(0, 0, 0, 0.95) 100%);
+	opacity: 0;
+	transform: translateY(8px);
+	transition: opacity 0.2s ease, transform 0.2s ease;
+	pointer-events: none;
+	color: #fff;
+}
+.movie-slide-btn:hover .movie-slide-btn__hover,
+.movie-slide-btn:focus-visible .movie-slide-btn__hover {
+	opacity: 1;
+	transform: translateY(0);
+}
+.movie-slide-btn:hover .slide-title,
+.movie-slide-btn:focus-visible .slide-title {
+	opacity: 0;
+}
+.movie-slide-btn__hover-title {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 700;
+	line-height: 1.2;
+}
+.movie-slide-btn__hover-meta {
+	margin: 0;
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: rgba(255, 255, 255, 0.78);
+}
+.movie-slide-btn__hover-overview {
+	margin: 0;
+	font-size: 0.82rem;
+	line-height: 1.45;
+	color: rgba(255, 255, 255, 0.95);
+	display: -webkit-box;
+	line-clamp: 4;
+	-webkit-line-clamp: 4;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
 }
 body {
     margin: auto;

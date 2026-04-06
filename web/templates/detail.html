@@ -4,6 +4,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/detail.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
 	<title>NetflixLight - details </title>
 </head>
 <body>
@@ -17,7 +18,19 @@
 		<p>Note : {{vote_average}} ({{vote_count}} avis)</p>
 		<p>{{runtime_label}} : {{runtime}}</p>
 		<p>Casting : {{cast}}</p>
+		<section class="cast-section" aria-labelledby="cast-title">
+			<h2 id="cast-title">Acteurs</h2>
+			<div class="cast-grid">
+				{{cast_cards}}
+			</div>
+		</section>
+		<h3>Film Similaire</h3>
+		<div class="swiper swiper-movies similar-swiper">
+			<div class="swiper-wrapper" id="similar-wrapper"></div>
+		</div>
 		<button type="button" onclick="window.location.href='/acceuil'">Retour accueil</button>
 	</main>
+	<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+	<script src="../static/script/carrouselComponent.js"></script>
 </body>
 </html>
