@@ -1,16 +1,17 @@
 // router.js — Système de routing SPA (hash-based)
 
 const routes = {
-  '/':          '/acceuil',
-  '/acceuil':   '/acceuil',
-  '/films':     '/films',
-  '/series':    '/series',
-  '/detail':    '/detail',
-  '/ma-liste':  '/ma-liste',
-  '/profil':    '/userinfo',
-  '/connexion': '/login',
-  '/inscription': '/register',
-};
+  '/':            '/api/page/acceuil',
+  '/acceuil':     '/api/page/acceuil',
+  '/films':       '/api/page/films',
+  '/series':      '/api/page/series',
+  '/detail':      '/api/page/detail',
+  '/ma-liste':    '/api/page/ma-liste',
+  '/profil':      '/api/page/userinfo',
+  '/connexion':   '/api/page/login',
+  '/inscription': '/api/page/register',
+  '/film':        '/api/page/film',
+}
 
 async function loadPage(path) {
   const target = routes[path] || '/acceuil';
