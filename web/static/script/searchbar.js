@@ -3,28 +3,55 @@ const searchInput = document.getElementById("search-input");
 const suggestionsList = document.getElementById("suggestions-list");
 
 let debounceTimer;
+let latestQueryId = 0;
 
-searchForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const query = searchInput.value.trim();
+function hideSuggestions() {
+  suggestionsList.innerHTML = "";
+  suggestionsList.style.display = "none";
+}
+
+function scheduleSearch(query) {
   clearTimeout(debounceTimer);
 
-  if (query.length < 3) {
-    suggestionsList.innerHTML = "";
-    suggestionsList.style.display = "none";
+  if (query.length < 2) {
+    hideSuggestions();
     return;
   }
 
   debounceTimer = setTimeout(() => {
     performSearch(query);
   }, 300);
+}
+
+searchInput.addEventListener("input", () => {
+  const query = searchInput.value.trim();
+  scheduleSearch(query);
+});
+
+searchForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const query = searchInput.value.trim();
+  clearTimeout(debounceTimer);
+
+  if (query.length < 2) {
+    hideSuggestions();
+    return;
+  }
+
+  performSearch(query);
 });
 
 async function performSearch(query) {
+  const queryId = ++latestQueryId;
+
   try {
     const response = await fetch(`/search-movie?query=${encodeURIComponent(query)}`, {
       credentials: "same-origin",
     });
+
+    if (queryId !== latestQueryId) {
+      return;
+    }
 
     const payload = await response.json();
     const items = Array.isArray(payload?.results) ? payload.results : [];
@@ -56,7 +83,6 @@ async function performSearch(query) {
     suggestionsList.style.display = items.length ? "block" : "none";
   } catch (err) {
     console.error("Erreur recherche:", err);
-    suggestionsList.innerHTML = "";
-    suggestionsList.style.display = "none";
+    hideSuggestions();
   }
 }
