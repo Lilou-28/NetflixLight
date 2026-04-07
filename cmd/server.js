@@ -593,6 +593,65 @@ const server = http.createServer((req, res) => {
                 });
         });
     }
+    else if (req.url.startsWith("/api/page/") && req.method === "GET") {
+    const sessionToken = getSessionTokenFromCookie(req)
+    const page = req.url.replace("/api/page/", "")
+
+    const publicPages = ["login", "register"]
+    const isPublic = publicPages.includes(page)
+
+    const servePartial = () => {
+        const templateMap = {
+            "acceuil":  "../web/templates/acceuil.html",
+            "login":    "../web/templates/login.html",
+            "register": "../web/templates/register.html",
+            "userinfo": "../web/templates/userinfo.html",
+            "detail":   "../web/templates/detail.html",
+            "film":     "../web/templates/film.html",
+        }
+
+        const filePath = templateMap[page]
+        if (!filePath) {
+            res.writeHead(404, {"Content-Type": "text/plain"})
+            res.end("Page introuvable")
+            return
+        }
+
+        fs.readFile(path.join(__dirname, filePath), "utf8", (err, data) => {
+            if (err) {
+                res.writeHead(500, {"Content-Type": "text/plain"})
+                res.end("Erreur serveur")
+                return
+            }
+
+            // Extraire uniquement le contenu du <main>
+            const match = data.match(/<main[^>]*>([\s\S]*?)<\/main>/)
+            const content = match ? `<main>${match[1]}</main>` : data
+
+            res.writeHead(200, {"Content-Type": "text/html"})
+            res.end(content)
+        })
+    }
+
+    if (isPublic) {
+        servePartial()
+    } else {
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Non connecté"}))
+            return
+        }
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+            servePartial()
+        })
+    }
+}
+
     else {
         res.writeHead(404, {"Content-Type" : "text/plain"})
         res.end("Page non trouvée")
