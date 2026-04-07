@@ -607,7 +607,9 @@ const server = http.createServer((req, res) => {
             "register": "../web/templates/register.html",
             "userinfo": "../web/templates/userinfo.html",
             "detail":   "../web/templates/detail.html",
-            "film":     "../web/templates/film.html",
+            "films":    "../web/templates/films.html",
+            "series":   "../web/templates/series.html",
+            "ma-liste": "../web/templates/ma-liste.html",
         }
 
         const filePath = templateMap[page]
