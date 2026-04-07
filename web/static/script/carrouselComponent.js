@@ -93,6 +93,8 @@ window.loadCarousel = async function loadCarousel(config) {
 document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(window.location.search);
   const movieId = params.get("id");
+  const rawContentType = params.get("type");
+  const contentType = rawContentType === "tv" || rawContentType === "movie" ? rawContentType : "movie";
 
   const configs = [
     {
@@ -136,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
     configs.push({
       wrapperId: "similar-wrapper",
       swiperSelector: ".similar-swiper",
-      endpoint: `/api/similar?id=${encodeURIComponent(movieId)}`,
+      endpoint: `/api/similar?id=${encodeURIComponent(movieId)}&type=${encodeURIComponent(contentType)}`,
       fetchErrorMessage: "Impossible de charger les contenus similaires",
       emptyErrorMessage: "Aucun contenu similaire recu depuis l'API",
     });

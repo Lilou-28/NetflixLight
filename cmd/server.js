@@ -6,7 +6,7 @@ require("dotenv").config()
 const db = require("../internal/database")
 const { generateToken, checkToken, getSessionTokenFromCookie } = require("../internal/token");
 const { hashPassword, verifyPassword } = require('../internal/hashmdp');
-const { getMovies, getSeries, getTopRatedMovies, getTopRatedSeries, getMoviesAction, getMoviesFantasy, getSeriesActionAdventure, getSeriesSciFiFantasy, searchmovie, getMovieDetails, getTvDetails, getTrendingAllWeek, getSimilar } = require('../internal/appelAPI')
+const { getMovies, getSeries, getTopRatedMovies, getTopRatedSeries, getMoviesAction, getMoviesFantasy, getSeriesActionAdventure, getSeriesSciFiFantasy, searchmovie, getMovieDetails, getTvDetails, getPersonDetails, getTrendingAllWeek, getSimilar } = require('../internal/appelAPI')
 
 const host = 'localhost'
 const port = 8080
@@ -43,7 +43,133 @@ function escapeHtml(value) {
         .replace(/'/g, "&#39;")
 }
 
+function getYoutubeTrailer(videos) {
+    const videoResults = Array.isArray(videos && videos.results) ? videos.results : []
+    const youtubeVideos = videoResults.filter((video) =>
+        video
+        && video.site === "YouTube"
+        && typeof video.key === "string"
+        && video.key.trim()
+    )
 
+    if (!youtubeVideos.length) return null
+
+    const officialTrailer = youtubeVideos.find((video) => video.type === "Trailer" && video.official)
+    if (officialTrailer) return officialTrailer
+
+    const trailer = youtubeVideos.find((video) => video.type === "Trailer")
+    if (trailer) return trailer
+
+    const teaser = youtubeVideos.find((video) => video.type === "Teaser")
+    if (teaser) return teaser
+
+    return youtubeVideos[0]
+}
+
+function normalizeLanguage(language) {
+    if (!language || typeof language !== "string") return "fr-FR"
+
+    const trimmed = language.trim()
+    if (!trimmed) return "fr-FR"
+
+    if (trimmed.includes("-")) {
+        const [lang, region] = trimmed.split("-")
+        if (!lang) return "fr-FR"
+        return `${lang.toLowerCase()}-${(region || lang).toUpperCase()}`
+    }
+
+    return `${trimmed.toLowerCase()}-${trimmed.toUpperCase()}`
+}
+
+function hasText(value) {
+    return typeof value === "string" && value.trim().length > 0
+}
+
+function hasResults(list) {
+    return Array.isArray(list) && list.length > 0
+}
+
+function mergeLocalizedDetails(base, candidate) {
+    const merged = { ...base }
+
+    if (hasText(candidate && candidate.overview) && !hasText(merged.overview)) merged.overview = candidate.overview
+    if (hasText(candidate && candidate.tagline) && !hasText(merged.tagline)) merged.tagline = candidate.tagline
+    if (hasText(candidate && candidate.homepage) && !hasText(merged.homepage)) merged.homepage = candidate.homepage
+    if (hasText(candidate && candidate.release_date) && !hasText(merged.release_date)) merged.release_date = candidate.release_date
+    if (hasText(candidate && candidate.first_air_date) && !hasText(merged.first_air_date)) merged.first_air_date = candidate.first_air_date
+
+    if (!Number.isFinite(merged.runtime) && Number.isFinite(candidate && candidate.runtime)) {
+        merged.runtime = candidate.runtime
+    }
+
+    if ((!Array.isArray(merged.episode_run_time) || !merged.episode_run_time.length)
+        && Array.isArray(candidate && candidate.episode_run_time)
+        && candidate.episode_run_time.length) {
+        merged.episode_run_time = candidate.episode_run_time
+    }
+
+    if (!Number.isFinite(merged.number_of_seasons) && Number.isFinite(candidate && candidate.number_of_seasons)) {
+        merged.number_of_seasons = candidate.number_of_seasons
+    }
+
+    if (!Array.isArray(merged.genres) || !merged.genres.length) {
+        merged.genres = Array.isArray(candidate && candidate.genres) ? candidate.genres : merged.genres
+    }
+
+    if (hasText(candidate && candidate.biography) && !hasText(merged.biography)) merged.biography = candidate.biography
+    if (hasText(candidate && candidate.birthday) && !hasText(merged.birthday)) merged.birthday = candidate.birthday
+    if (hasText(candidate && candidate.place_of_birth) && !hasText(merged.place_of_birth)) merged.place_of_birth = candidate.place_of_birth
+
+    const mergedVideos = merged.videos && merged.videos.results
+    const candidateVideos = candidate && candidate.videos && candidate.videos.results
+    if (!hasResults(mergedVideos) && hasResults(candidateVideos)) {
+        merged.videos = { ...(merged.videos || {}), results: candidateVideos }
+    }
+
+    const mergedCast = merged.credits && merged.credits.cast
+    const candidateCast = candidate && candidate.credits && candidate.credits.cast
+    if (!hasResults(mergedCast) && hasResults(candidateCast)) {
+        merged.credits = { ...(merged.credits || {}), cast: candidateCast }
+    }
+
+    return merged
+}
+
+async function getLocalizedDetails(contentType, id, preferredLanguage = "fr-FR") {
+    const loader = contentType === "tv"
+        ? (language) => getTvDetails(tmdbBearerToken, id, language)
+        : contentType === "person"
+            ? (language) => getPersonDetails(tmdbBearerToken, id, language)
+            : (language) => getMovieDetails(tmdbBearerToken, id, language)
+
+    const languagesTried = []
+    const languageSet = new Set()
+
+    const primaryLanguage = normalizeLanguage(preferredLanguage)
+    languageSet.add(primaryLanguage)
+
+    let details = await loader(primaryLanguage)
+    languagesTried.push(primaryLanguage)
+
+    const originalLanguage = normalizeLanguage(details.original_language)
+    languageSet.add(originalLanguage)
+    languageSet.add("en-US")
+
+    for (const language of languageSet) {
+        if (languagesTried.includes(language)) continue
+
+        try {
+            const localized = await loader(language)
+            details = mergeLocalizedDetails(details, localized)
+            languagesTried.push(language)
+        } catch (_error) {
+            languagesTried.push(language)
+        }
+    }
+
+    details._resolved_languages = languagesTried
+    return details
+}
 
 const server = http.createServer((req, res) => {
     if (req.url === "/") {
@@ -79,20 +205,7 @@ const server = http.createServer((req, res) => {
 
             (async () => {
                 try {
-                    let movie = contentType === "tv"
-                        ? await getTvDetails(tmdbBearerToken, movieId)
-                        : await getMovieDetails(tmdbBearerToken, movieId)
-
-                    // Some TMDB entries have an empty French overview; fallback to English.
-                    if (!movie.overview || !movie.overview.trim()) {
-                        const fallbackMovie = contentType === "tv"
-                            ? await getTvDetails(tmdbBearerToken, movieId, "en-US")
-                            : await getMovieDetails(tmdbBearerToken, movieId, "en-US");
-
-                        if (fallbackMovie.overview && fallbackMovie.overview.trim()) {
-                            movie = { ...movie, overview: fallbackMovie.overview };
-                        }
-                    }
+                    const movie = await getLocalizedDetails(contentType, movieId, "fr-FR")
 
                     fs.readFile(path.join(__dirname, "../web/templates/detail.html"), "utf8", (err, data) => {
                         if (err) {
@@ -163,8 +276,30 @@ const server = http.createServer((req, res) => {
                                 .join("")
                             : `<p class="cast-empty">Casting inconnu</p>`;
 
+                        const trailer = getYoutubeTrailer(movie.videos)
+                        const movieTitle = movie.title || movie.original_name || "Titre inconnu"
+                        const trailerSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(`bande annonce ${movieTitle}`)}`
+                        const trailerBlock = trailer
+                            ? `
+                                <div class="trailer-player">
+                                    <iframe
+                                        src="https://www.youtube.com/embed/${encodeURIComponent(trailer.key)}"
+                                        title="Bande annonce de ${escapeHtml(movieTitle)}"
+                                        loading="lazy"
+                                        referrerpolicy="strict-origin-when-cross-origin"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        allowfullscreen
+                                    ></iframe>
+                                </div>
+                                <a class="trailer-link" href="https://www.youtube.com/watch?v=${encodeURIComponent(trailer.key)}" target="_blank" rel="noopener noreferrer">Ouvrir sur YouTube</a>
+                            `
+                            : `
+                                <p class="trailer-empty">Bande annonce indisponible pour ce contenu.</p>
+                                <a class="trailer-link" href="${trailerSearchUrl}" target="_blank" rel="noopener noreferrer">Rechercher sur YouTube</a>
+                            `
+
                         const html = data
-                            .replace("{{title}}", movie.title || movie.original_name || "Titre inconnu")
+                            .replace("{{title}}", movieTitle)
                             .replace("{{overview}}", movie.overview || "Aucune description disponible")
                             .replace("{{poster}}", poster)
                             .replace("{{backdrop_path}}", backdrop)
@@ -175,7 +310,8 @@ const server = http.createServer((req, res) => {
                             .replace("{{runtime_label}}", runtimeLabel)
                             .replace("{{runtime}}", runtimeValue)
                             .replace("{{cast}}", castSummary)
-                            .replace("{{cast_cards}}", castCards);
+                            .replace("{{cast_cards}}", castCards)
+                            .replace("{{trailer_block}}", trailerBlock)
                         res.writeHead(200, { "Content-Type": "text/html" });
                         res.end(html);
                     });
@@ -355,7 +491,8 @@ const server = http.createServer((req, res) => {
 
             const requestUrl = new URL(req.url, `http://${req.headers.host || host}`)
             const movieId = requestUrl.searchParams.get("id")
-            const contentType = requestUrl.searchParams.get("type") === "tv" ? "tv" : "movie"
+            const requestedType = requestUrl.searchParams.get("type")
+            const contentType = requestedType === "tv" || requestedType === "person" ? requestedType : "movie"
             const language = requestUrl.searchParams.get("language") || "fr-FR"
 
             if (!movieId) {
@@ -364,11 +501,7 @@ const server = http.createServer((req, res) => {
                 return
             }
 
-            const loadDetails = contentType === "tv"
-                ? getTvDetails(tmdbBearerToken, movieId, language)
-                : getMovieDetails(tmdbBearerToken, movieId, language)
-
-            loadDetails
+            getLocalizedDetails(contentType, movieId, language)
                 .then(details => {
                     res.writeHead(200, {"Content-Type": "application/json"})
                     res.end(JSON.stringify(details))
@@ -577,6 +710,8 @@ const server = http.createServer((req, res) => {
 
             const requestUrl = new URL(req.url, `http://${req.headers.host || host}`)
             const movieId = requestUrl.searchParams.get("id")
+            const requestedType = requestUrl.searchParams.get("type")
+            const contentType = requestedType === "tv" ? "tv" : "movie"
             const pageParam = Number.parseInt(requestUrl.searchParams.get("page") || "1", 10)
             const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1
 
@@ -586,10 +721,10 @@ const server = http.createServer((req, res) => {
                 return
             }
 
-            getSimilar(tmdbBearerToken, movieId, page)
+            getSimilar(tmdbBearerToken, movieId, page, "fr-FR", contentType)
                 .then((data) => {
                     const results = Array.isArray(data.results)
-                        ? data.results.map((item) => ({ ...item, media_type: "movie" }))
+                        ? data.results.map((item) => ({ ...item, media_type: contentType }))
                         : []
                     res.writeHead(200, {"Content-Type": "application/json"})
                     res.end(JSON.stringify({ results }))
@@ -692,9 +827,30 @@ const server = http.createServer((req, res) => {
         res.end()
     }
     else if (req.url === "/acceuil") {
-        fs.readFile(path.join(__dirname,"../web/templates/acceuil.html"), (err, data) => {
-            res.writeHead(200, {"Content-Type" : "text/html" })
-            res.end(data)
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(302, {"Location": "/login"})
+            res.end()
+            return
+        }
+
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(302, {"Location": "/login"})
+                res.end()
+                return
+            }
+
+            fs.readFile(path.join(__dirname,"../web/templates/acceuil.html"), (err, data) => {
+                if (err) {
+                    res.writeHead(500, {"Content-Type" : "text/plain" })
+                    res.end("Erreur lors du chargement de la page d'accueil")
+                    return
+                }
+
+                res.writeHead(200, {"Content-Type" : "text/html" })
+                res.end(data)
+            })
         })
     }
     else if (req.url.startsWith("/search-movie") && req.method === "GET") {

@@ -79,19 +79,24 @@ async function searchmovie(credential, page = 1, query) {
 }
 
 async function getMovieDetails(credential, movieId, language = "fr-FR") {
-    return fetchTmdbJson(`movie/${movieId}`, credential, { append_to_response: "credits", language })
+    return fetchTmdbJson(`movie/${movieId}`, credential, { append_to_response: "credits,videos", language })
 }
 
 async function getTvDetails(credential, tvId, language = "fr-FR") {
-    return fetchTmdbJson(`tv/${tvId}`, credential, { append_to_response: "credits", language })
+    return fetchTmdbJson(`tv/${tvId}`, credential, { append_to_response: "credits,videos", language })
+}
+
+async function getPersonDetails(credential, personId, language = "fr-FR") {
+    return fetchTmdbJson(`person/${personId}`, credential, { append_to_response: "combined_credits", language })
 }
 
 async function getTrendingAllWeek(credential, page = 1, language = "fr-FR") {
     return fetchTmdbJson("trending/all/week", credential, { language, page })
 }
 
-async function getSimilar(credential, MovieId, page = 1, language = "fr-FR") {
-    return fetchTmdbJson(`movie/${MovieId}/similar`, credential, { language, page })
+async function getSimilar(credential, mediaId, page = 1, language = "fr-FR", mediaType = "movie") {
+    const resolvedMediaType = mediaType === "tv" ? "tv" : "movie"
+    return fetchTmdbJson(`${resolvedMediaType}/${mediaId}/similar`, credential, { language, page })
 }
 
 module.exports = {
@@ -106,6 +111,7 @@ module.exports = {
     searchmovie,
     getMovieDetails,
     getTvDetails,
+    getPersonDetails,
     getTrendingAllWeek,
     getSimilar,
 }
