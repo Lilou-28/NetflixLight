@@ -44,17 +44,30 @@
     <script src="../static/script/carrouselGenreAction.js"></script>
     <script src="../static/script/carrouselGenreFantasy.js"></script>
     <script src="../static/script/searchbar.js"></script>
+
     <script type="module">
-        import { initHeader, updateHeaderAuth } from '../static/js/header.js';
+    import { initHeader, updateHeaderAuth } from '/static/js/header.js';
 
-        initHeader();
+    initHeader();
 
-        const user = JSON.parse(localStorage.getItem('nl_user') || 'null');
-        updateHeaderAuth({ isLoggedIn: !!user, username: user?.username ?? 'U' });
+    fetch("/api/userinfo", { method: "GET" })
+    .then((res) => {
+        if (!res.ok) throw new Error("Non connecté");
+        return res.json();
+    })
+    .then((data) => {
+        localStorage.setItem('nl_user', JSON.stringify({ username: data.username }));
+        updateHeaderAuth({ isLoggedIn: true, username: data.username });
+    })
+    .catch(() => {
+        localStorage.removeItem('nl_user');
+        updateHeaderAuth({ isLoggedIn: false });
+    });
 
-        document.addEventListener('nl:auth:logout', () => {
-            window.location.href = '/logout';
-        });
-    </script>
+    document.addEventListener('nl:auth:logout', () => {
+        localStorage.removeItem('nl_user');
+        window.location.href = '/logout';
+    });
+</script>
 </body>
 </html>
