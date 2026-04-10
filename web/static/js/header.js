@@ -5,7 +5,7 @@
  */
 
 export function initHeader() {
-  const header = document.getElementById('main-header');
+  const header = document.getElementById("main-header");
   if (!header) return;
 
   _renderHeader(header);
@@ -77,11 +77,10 @@ function _renderHeader(header) {
 
         <!-- Boutons auth (affiché si déconnecté) -->
         <div class="nl-auth-btns" id="nl-auth-btns">
-          <a href="#/connexion" class="nl-btn nl-btn--ghost" data-link>Connexion</a>
-          <a href="#/inscription" class="nl-btn nl-btn--primary" data-link>S'inscrire</a>
-        </div>
-      </div>
+          <a href="/login" class="nl-btn nl-btn--ghost">Connexion</a>
+          <a href="/register" class="nl-btn nl-btn--primary">S'inscrire</a>
     </div>
+  </div>
   `;
 }
 
@@ -92,13 +91,13 @@ function _renderHeader(header) {
 function _bindScrollBehavior(header) {
   const onScroll = () => {
     if (window.scrollY > 20) {
-      header.classList.add('nl-header--scrolled');
+      header.classList.add("nl-header--scrolled");
     } else {
-      header.classList.remove('nl-header--scrolled');
+      header.classList.remove("nl-header--scrolled");
     }
   };
 
-  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener("scroll", onScroll, { passive: true });
   onScroll(); // état initial
 }
 
@@ -107,52 +106,54 @@ function _bindScrollBehavior(header) {
  */
 
 function _bindSearchBehavior(header) {
-  const toggle = header.querySelector('#nl-search-toggle');
-  const box = header.querySelector('#nl-search-box');
-  const input = header.querySelector('#nl-search-input');
+  const toggle = header.querySelector("#nl-search-toggle");
+  const box = header.querySelector("#nl-search-box");
+  const input = header.querySelector("#nl-search-input");
 
   let debounceTimer = null;
 
   // Ouvrir/fermer la barre de recherche
-  toggle.addEventListener('click', () => {
+  toggle.addEventListener("click", () => {
     const isOpen = !box.hidden;
     box.hidden = isOpen;
-    toggle.setAttribute('aria-expanded', String(!isOpen));
+    toggle.setAttribute("aria-expanded", String(!isOpen));
     if (!isOpen) {
       input.focus();
     } else {
-      input.value = '';
+      input.value = "";
       // Effacer les résultats si besoin
-      document.dispatchEvent(new CustomEvent('nl:search:clear'));
+      document.dispatchEvent(new CustomEvent("nl:search:clear"));
     }
   });
 
   // Fermer avec Escape
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
       box.hidden = true;
-      toggle.setAttribute('aria-expanded', 'false');
-      input.value = '';
-      document.dispatchEvent(new CustomEvent('nl:search:clear'));
+      toggle.setAttribute("aria-expanded", "false");
+      input.value = "";
+      document.dispatchEvent(new CustomEvent("nl:search:clear"));
     }
   });
 
   // Debounce sur la frappe
-  input.addEventListener('input', () => {
+  input.addEventListener("input", () => {
     clearTimeout(debounceTimer);
     const query = input.value.trim();
 
     debounceTimer = setTimeout(() => {
       if (query.length < 2) {
-        document.dispatchEvent(new CustomEvent('nl:search:clear'));
+        document.dispatchEvent(new CustomEvent("nl:search:clear"));
         return;
       }
       // Émet un event global que la page de résultats écoute
-      document.dispatchEvent(new CustomEvent('nl:search', {
-        detail: { query }
-      }));
+      document.dispatchEvent(
+        new CustomEvent("nl:search", {
+          detail: { query },
+        }),
+      );
       // Navigation vers la page de recherche
-      if (!window.location.hash.startsWith('#/recherche')) {
+      if (!window.location.hash.startsWith("#/recherche")) {
         window.location.hash = `#/recherche?q=${encodeURIComponent(query)}`;
       }
     }, 300);
@@ -164,31 +165,31 @@ function _bindSearchBehavior(header) {
  */
 
 function _bindDropdown(header) {
-  const toggle = header.querySelector('#nl-profile-toggle');
-  const dropdown = header.querySelector('#nl-dropdown');
-  const logoutBtn = header.querySelector('#nl-logout-btn');
+  const toggle = header.querySelector("#nl-profile-toggle");
+  const dropdown = header.querySelector("#nl-dropdown");
+  const logoutBtn = header.querySelector("#nl-logout-btn");
 
   if (!toggle || !dropdown) return;
 
-  toggle.addEventListener('click', (e) => {
+  toggle.addEventListener("click", (e) => {
     e.stopPropagation();
     const isOpen = !dropdown.hidden;
     dropdown.hidden = isOpen;
-    toggle.setAttribute('aria-expanded', String(!isOpen));
+    toggle.setAttribute("aria-expanded", String(!isOpen));
   });
 
   // Fermer en cliquant ailleurs
-  document.addEventListener('click', () => {
+  document.addEventListener("click", () => {
     dropdown.hidden = true;
-    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute("aria-expanded", "false");
   });
 
-  dropdown.addEventListener('click', (e) => e.stopPropagation());
+  dropdown.addEventListener("click", (e) => e.stopPropagation());
 
   // Déconnexion
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      document.dispatchEvent(new CustomEvent('nl:auth:logout'));
+    logoutBtn.addEventListener("click", () => {
+      document.dispatchEvent(new CustomEvent("nl:auth:logout"));
     });
   }
 }
@@ -199,17 +200,19 @@ function _bindDropdown(header) {
 
 function _bindNavHighlight(header) {
   const updateActive = () => {
-    const hash = window.location.hash || '#/';
-    const links = header.querySelectorAll('.nl-nav__link[data-route]');
-    links.forEach(link => {
-      const route = link.getAttribute('data-route');
-      const isActive = hash.includes(link.getAttribute('href').replace('#', ''));
-      link.classList.toggle('nl-nav__link--active', isActive);
-      link.setAttribute('aria-current', isActive ? 'page' : 'false');
+    const hash = window.location.hash || "#/";
+    const links = header.querySelectorAll(".nl-nav__link[data-route]");
+    links.forEach((link) => {
+      const route = link.getAttribute("data-route");
+      const isActive = hash.includes(
+        link.getAttribute("href").replace("#", ""),
+      );
+      link.classList.toggle("nl-nav__link--active", isActive);
+      link.setAttribute("aria-current", isActive ? "page" : "false");
     });
   };
 
-  window.addEventListener('hashchange', updateActive);
+  window.addEventListener("hashchange", updateActive);
   updateActive();
 }
 
@@ -221,22 +224,22 @@ function _bindNavHighlight(header) {
  * Met à jour le header selon l'état d'authentification.
  * @param {{ isLoggedIn: boolean, username?: string }} state
  */
-export function updateHeaderAuth({ isLoggedIn, username = 'M' }) {
-  const profile = document.getElementById('nl-profile');
-  const authBtns = document.getElementById('nl-auth-btns');
-  const avatar = document.getElementById('nl-avatar');
-  const authLinks = document.querySelectorAll('.nl-nav__link--auth');
+export function updateHeaderAuth({ isLoggedIn, username = "M" }) {
+  const profile = document.getElementById("nl-profile");
+  const authBtns = document.getElementById("nl-auth-btns");
+  const avatar = document.getElementById("nl-avatar");
+  const authLinks = document.querySelectorAll(".nl-nav__link--auth");
 
   if (!profile || !authBtns) return;
 
   if (isLoggedIn) {
     profile.hidden = false;
     authBtns.hidden = true;
-    authLinks.forEach(l => l.style.display = '');
+    authLinks.forEach((l) => (l.style.display = ""));
     if (avatar) avatar.textContent = username.charAt(0).toUpperCase();
   } else {
     profile.hidden = true;
     authBtns.hidden = false;
-    authLinks.forEach(l => l.style.display = 'none');
+    authLinks.forEach((l) => (l.style.display = "none"));
   }
 }
