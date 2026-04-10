@@ -283,7 +283,8 @@ const server = http.createServer((req, res) => {
                             ? `
                                 <div class="trailer-player">
                                     <iframe
-                                        src="https://www.youtube.com/embed/${encodeURIComponent(trailer.key)}"
+                                        id="iframeSon"
+                                        src="https://www.youtube.com/embed/${encodeURIComponent(trailer.key)}?enablejsapi=1&playsinline=1"
                                         title="Bande annonce de ${escapeHtml(movieTitle)}"
                                         loading="lazy"
                                         referrerpolicy="strict-origin-when-cross-origin"
@@ -292,6 +293,9 @@ const server = http.createServer((req, res) => {
                                     ></iframe>
                                 </div>
                                 <a class="trailer-link" href="https://www.youtube.com/watch?v=${encodeURIComponent(trailer.key)}" target="_blank" rel="noopener noreferrer">Ouvrir sur YouTube</a>
+                                <button class="play" id="buttonPlay">Lecture</button>
+                                <button class="mute" id="buttonMute">Couper le son</button>
+                                <button class="fullscreen" id="buttonFullscreen">Plein écran</button>
                             `
                             : `
                                 <p class="trailer-empty">Bande annonce indisponible pour ce contenu.</p>

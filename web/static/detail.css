@@ -280,6 +280,75 @@ body {
     filter: brightness(1.04);
 }
 
+.mute {
+    display: inline-block;
+    margin-top: 0.9rem;
+    margin-left: 0.6rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.6rem 1rem;
+    color: var(--text);
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.mute:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.mute:active {
+    transform: translateY(0);
+}
+.fullscreen {
+    display: inline-block;
+    margin-top: 0.9rem;
+    margin-left: 0.6rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.6rem 1rem;
+    color: var(--text);
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.fullscreen:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.fullscreen:active {
+    transform: translateY(0);
+}
+.play {
+    display: inline-block;
+    margin-top: 0.9rem;
+    margin-left: 0.6rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.6rem 1rem;
+    color: var(--text);
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.play:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.play:active {
+    transform: translateY(0);
+}
 .trailer-empty {
     margin: 0;
     color: var(--muted);
@@ -357,6 +426,11 @@ body {
         width: auto;
         margin-left: 1rem;
         margin-right: 1rem;
+    }
+
+    .mute {
+        margin-left: 0;
+        margin-top: 0.7rem;
     }
 
     .hero > button {
