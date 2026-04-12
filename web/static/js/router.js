@@ -44,9 +44,11 @@ function _executeScripts(container) {
     const newScript = document.createElement('script');
     if (oldScript.src) {
       newScript.src = oldScript.src;
+      newScript.defer = true;
     } else {
       newScript.textContent = oldScript.textContent;
     }
+    if (oldScript.type) newScript.type = oldScript.type;
     oldScript.replaceWith(newScript);
   });
 }
