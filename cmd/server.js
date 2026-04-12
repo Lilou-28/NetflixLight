@@ -701,24 +701,43 @@ const server = http.createServer((req, res) => {
         })
     }
     else if (req.method === "GET" && req.url === "/series") {
-    const sessionToken = getSessionTokenFromCookie(req);
-    if (!sessionToken) {
-        res.writeHead(302, { "Location": "/login" });
-        res.end();
-        return;
-    }
-    checkToken(sessionToken, (isValid) => {
-        if (!isValid) {
+        const sessionToken = getSessionTokenFromCookie(req);
+        if (!sessionToken) {
             res.writeHead(302, { "Location": "/login" });
             res.end();
             return;
         }
-        fs.readFile(path.join(__dirname, "../web/templates/series.html"), (err, data) => {
-            res.writeHead(200, { "Content-Type": "text/html" });
-            res.end(data);
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(302, { "Location": "/login" });
+                res.end();
+                return;
+            }
+            fs.readFile(path.join(__dirname, "../web/templates/series.html"), (err, data) => {
+                res.writeHead(200, { "Content-Type": "text/html" });
+                res.end(data);
+            });
         });
-    });
-}
+    }
+    else if (req.method === "GET" && req.url === "/films") {
+        const sessionToken = getSessionTokenFromCookie(req);
+        if (!sessionToken) {
+            res.writeHead(302, { "Location": "/login" });
+            res.end();
+            return;
+        }
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(302, { "Location": "/login" });
+                res.end();
+                return;
+            }
+            fs.readFile(path.join(__dirname, "../web/templates/films.html"), (err, data) => {
+                res.writeHead(200, { "Content-Type": "text/html" });
+                res.end(data);
+            });
+        });
+    }
     else if (req.url.startsWith("/search-movie") && req.method === "GET") {
 
         const urlObj = new URL(req.url, `http://${req.headers.host}`);
