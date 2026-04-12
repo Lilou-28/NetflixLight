@@ -21,6 +21,9 @@
         <p>Note : {{vote_average}} ({{vote_count}} avis)</p>
         <p>{{runtime_label}} : {{runtime}}</p>
         <p>Casting : {{cast}}</p>
+
+        <button id="favori-btn" class="favori-btn">♡ Ajouter aux favoris</button>
+
         <section class="cast-section" aria-labelledby="cast-title">
             <h2 id="cast-title">Acteurs</h2>
             <div class="cast-grid">
@@ -35,6 +38,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="/static/script/carrouselComponent.js"></script>
+    <script src="/static/script/favoris.js"></script>
     <script type="module">
         import { initHeader, updateHeaderAuth } from '/static/js/header.js';
 
@@ -57,6 +61,29 @@
         document.addEventListener('nl:auth:logout', () => {
             localStorage.removeItem('nl_user');
             window.location.href = '/logout';
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const params = new URLSearchParams(window.location.search);
+            const mediaId = params.get("id");
+            const mediaType = params.get("type") || "movie";
+            const title = document.querySelector("h1")?.textContent || "";
+            const poster = document.querySelector("img:nth-child(3)")?.src || "";
+
+            const btn = document.getElementById("favori-btn");
+            if (!btn || !mediaId) return;
+
+            const already = await window.isFavori(mediaId);
+            if (already) {
+                btn.textContent = "♥ Retirer des favoris";
+                btn.classList.add("favori--active");
+            }
+
+            btn.addEventListener("click", () => {
+                window.toggleFavori(mediaId, mediaType, title, poster, btn);
+            });
         });
     </script>
 </body>
