@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/acceuil.css">
+    <link rel="stylesheet" href="/static/header.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+    <title>NetflixLight - Films</title>
+</head>
+<body>
+    <header id="main-header"></header>
+
+    <h3>Films populaires</h3>
+    <div class="swiper swiper-movies movies-swiper">
+        <div class="swiper-wrapper" id="movies-wrapper"></div>
+    </div>
+
+    <h3>Films les mieux notés</h3>
+    <div class="swiper swiper-series top-rated-movies-swiper">
+        <div class="swiper-wrapper" id="top-rated-movies-wrapper"></div>
+    </div>
+
+    <h3>Film d'action</h3>
+    <div class="swiper swiper-movies genre-action-swiper">
+        <div class="swiper-wrapper" id="movie-action-wrapper"></div>
+    </div>
+
+    <h3>Film Fantasy</h3>
+    <div class="swiper swiper-movies genre-fantasy-swiper">
+        <div class="swiper-wrapper" id="movie-fantasy-wrapper"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="/static/script/carrouselComponent.js"></script>
+
+    <script type="module">
+        import { initHeader, updateHeaderAuth } from '/static/js/header.js';
+
+        initHeader();
+
+        fetch("/api/userinfo", { method: "GET" })
+        .then((res) => {
+            if (!res.ok) throw new Error("Non connecté");
+            return res.json();
+        })
+        .then((data) => {
+            localStorage.setItem('nl_user', JSON.stringify({ username: data.username }));
+            updateHeaderAuth({ isLoggedIn: true, username: data.username });
+        })
+        .catch(() => {
+            localStorage.removeItem('nl_user');
+            updateHeaderAuth({ isLoggedIn: false });
+        });
+
+        document.addEventListener('nl:auth:logout', () => {
+            localStorage.removeItem('nl_user');
+            window.location.href = '/logout';
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            window.loadCarousel({
+                wrapperId: "movies-wrapper",
+                swiperSelector: ".movies-swiper",
+                endpoint: "/api/popular-mixed",
+                fetchErrorMessage: "Impossible de charger les films",
+                emptyErrorMessage: "Aucun film reçu",
+                fallbackMediaType: "movie"
+            });
+
+            window.loadCarousel({
+                wrapperId: "top-rated-movies-wrapper",
+                swiperSelector: ".top-rated-movies-swiper",
+                endpoint: "/api/top-rated-mixed",
+                fetchErrorMessage: "Impossible de charger les films mieux notés",
+                emptyErrorMessage: "Aucun film mieux noté reçu",
+                fallbackMediaType: "movie"
+            });
+
+            window.loadCarousel({
+                wrapperId: "movie-action-wrapper",
+                swiperSelector: ".genre-action-swiper",
+                endpoint: "/discover/movie-action",
+                fetchErrorMessage: "Impossible de charger les films d'action",
+                emptyErrorMessage: "Aucun film d'action reçu",
+                fallbackMediaType: "movie"
+            });
+
+            window.loadCarousel({
+                wrapperId: "movie-fantasy-wrapper",
+                swiperSelector: ".genre-fantasy-swiper",
+                endpoint: "/discover/movie-fantasy",
+                fetchErrorMessage: "Impossible de charger les films fantasy",
+                emptyErrorMessage: "Aucun film fantasy reçu",
+                fallbackMediaType: "movie"
+            });
+        });
+    </script>
+</body>
+</html>
