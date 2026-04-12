@@ -36,27 +36,22 @@ function _renderHeader(header) {
 
       <!-- Zone droite : recherche + profil -->
       <div class="nl-header__right">
-        <!-- Recherche -->
-        <div class="nl-search" id="nl-search" role="search">
-          <button class="nl-search__toggle" id="nl-search-toggle" aria-label="Ouvrir la recherche" aria-expanded="false">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-          </button>
-          <div class="nl-search__box" id="nl-search-box" hidden>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              type="search"
-              id="nl-search-input"
-              class="nl-search__input"
-              placeholder="Titres, personnes, genres…"
-              autocomplete="off"
-              aria-label="Rechercher"
-            />
-          </div>
+       <!-- Recherche -->
+      <div class="nl-search" id="nl-search" role="search">
+        <div class="nl-search__box" id="nl-search-box">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="search"
+            id="nl-search-input"
+            class="nl-search__input"
+            placeholder="Titres, personnes, genres…"
+            autocomplete="off"
+            aria-label="Rechercher"
+          />
         </div>
+      </div>
 
         <!-- Profil (affiché si connecté) -->
         <div class="nl-profile" id="nl-profile" hidden>
@@ -106,37 +101,18 @@ function _bindScrollBehavior(header) {
  */
 
 function _bindSearchBehavior(header) {
-  const toggle = header.querySelector("#nl-search-toggle");
-  const box = header.querySelector("#nl-search-box");
   const input = header.querySelector("#nl-search-input");
+  if (!input) return;
 
   let debounceTimer = null;
 
-  // Ouvrir/fermer la barre de recherche
-  toggle.addEventListener("click", () => {
-    const isOpen = !box.hidden;
-    box.hidden = isOpen;
-    toggle.setAttribute("aria-expanded", String(!isOpen));
-    if (!isOpen) {
-      input.focus();
-    } else {
-      input.value = "";
-      // Effacer les résultats si besoin
-      document.dispatchEvent(new CustomEvent("nl:search:clear"));
-    }
-  });
-
-  // Fermer avec Escape
   input.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
-      box.hidden = true;
-      toggle.setAttribute("aria-expanded", "false");
       input.value = "";
       document.dispatchEvent(new CustomEvent("nl:search:clear"));
     }
   });
 
-  // Debounce sur la frappe
   input.addEventListener("input", () => {
     clearTimeout(debounceTimer);
     const query = input.value.trim();
@@ -146,13 +122,7 @@ function _bindSearchBehavior(header) {
         document.dispatchEvent(new CustomEvent("nl:search:clear"));
         return;
       }
-      // Émet un event global que la page de résultats écoute
-      document.dispatchEvent(
-        new CustomEvent("nl:search", {
-          detail: { query },
-        }),
-      );
-      // Navigation vers la page de recherche
+      document.dispatchEvent(new CustomEvent("nl:search", { detail: { query } }));
       if (!window.location.hash.startsWith("#/recherche")) {
         window.location.hash = `#/recherche?q=${encodeURIComponent(query)}`;
       }
