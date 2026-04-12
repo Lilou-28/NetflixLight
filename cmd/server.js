@@ -27,10 +27,13 @@ const mimeTypes = {
 
 const server = http.createServer((req, res) => {
     if (req.url === "/") {
-        fs.readFile(path.join(__dirname,"../web/templates/index.html"), (err, data) => {
-            res.writeHead(200, {"Content-Type" : "text/html" })
-            res.end(data)
-        })
+    const sessionToken = getSessionTokenFromCookie(req);
+    if (sessionToken) {
+        res.writeHead(302, { "Location": "/acceuil" });
+    } else {
+        res.writeHead(302, { "Location": "/login" });
+    }
+    res.end();
     }
     else if (req.url.startsWith("/details")) {
         const sessionToken = getSessionTokenFromCookie(req);
@@ -565,7 +568,7 @@ const server = http.createServer((req, res) => {
         })
     }
     else if (req.url.startsWith("/search-movie") && req.method === "GET") {
-        
+
         const urlObj = new URL(req.url, `http://${req.headers.host}`);
         const query = urlObj.searchParams.get("query");
 
