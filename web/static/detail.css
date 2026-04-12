@@ -29,6 +29,87 @@ body {
         linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
 }
 
+.movie-slide-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.movie-slide-btn:hover {
+    transform: scale(1.03);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.movie-slide-btn:focus-visible {
+    outline: 2px solid #e50914;
+    outline-offset: 3px;
+}
+
+.movie-slide-btn img {
+    transition: transform 0.35s ease, filter 0.35s ease;
+}
+
+.movie-slide-btn:focus-visible img {
+    transform: scale(1.06);
+    filter: saturate(1.06) brightness(0.92);
+}
+
+.swiper-movies,
+.swiper-series {
+    width: min(1100px, calc(100% - 8rem));
+    margin: 0 4rem 2rem;
+    padding: 0.5rem 0 1.75rem;
+    border: none;
+    border-radius: 14px;
+    background: transparent;
+    position: relative;
+    z-index: 2;
+}
+
+.swiper-slide {
+    height: auto;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.swiper-slide img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2 / 3;
+    display: block;
+    object-fit: cover;
+}
+
+.slide-title {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    color: #fff;
+    padding: 2rem 0.5rem 1rem;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 1.3;
+    background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.3) 30%, rgba(0, 0, 0, 0.7) 70%, rgba(0, 0, 0, 1) 100%);
+    z-index: 1;
+}
+
+.hero h3 {
+    width: min(1100px, calc(100% - 8rem));
+    margin: 0.75rem 4rem;
+    color: #fff;
+    position: relative;
+    z-index: 2;
+}
+
 .hero {
     width: 100%;
     min-height: 100vh;
@@ -92,7 +173,70 @@ body {
     color: var(--muted);
 }
 
-.hero button {
+.cast-section {
+    position: relative;
+    z-index: 2;
+    width: min(1160px, calc(100% - 8rem));
+    margin: 0 4rem 2.5rem;
+    padding: 1.2rem 1.2rem 1.4rem;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: rgba(6, 10, 18, 0.48);
+    backdrop-filter: blur(10px);
+}
+
+.cast-section h2 {
+    margin: 0 0 1rem;
+    font-size: 1.1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text);
+}
+
+.cast-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 1rem;
+}
+
+.cast-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.cast-card__image {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+}
+
+.cast-card__name {
+    margin: 0.65rem 0 0.25rem;
+    font-size: 0.98rem;
+    line-height: 1.2;
+    color: var(--text);
+}
+
+.cast-card__role {
+    width: 100%;
+    margin: 0;
+    font-size: 0.84rem;
+    line-height: 1.4;
+    color: var(--muted);
+}
+
+.cast-empty {
+    margin: 0;
+    color: var(--muted);
+}
+
+.hero > button {
     margin: 0 4rem 3rem;
     appearance: none;
     border: 0;
@@ -106,12 +250,12 @@ body {
     transition: transform 0.18s ease, filter 0.18s ease, background-color 0.18s ease;
 }
 
-.hero button:hover {
+.hero > button:hover {
     transform: translateY(-2px);
     filter: brightness(1.04);
 }
 
-.hero button:active {
+.hero > button:active {
     transform: translateY(0);
 }
 
@@ -127,7 +271,7 @@ body {
 
     .hero h1,
     .hero p,
-    .hero button {
+    .hero > button {
         width: auto;
         margin-left: 1rem;
         margin-right: 1rem;
@@ -142,7 +286,25 @@ body {
         font-size: 0.98rem;
     }
 
-    .hero button {
+    .cast-section {
+        width: auto;
+        margin-left: 1rem;
+        margin-right: 1rem;
+    }
+
+    .cast-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .hero h3,
+    .swiper-movies,
+    .swiper-series {
+        width: auto;
+        margin-left: 1rem;
+        margin-right: 1rem;
+    }
+
+    .hero > button {
         margin-bottom: 2rem;
     }
 }

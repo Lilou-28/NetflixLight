@@ -1,9 +1,5 @@
-const sqlite3 = require("sqlite3").verbose()
-const path = require("path")
 const crypto = require("crypto")
 const db = require("./database"); 
-
-const dbPath = path.join(__dirname, "dbNetflixLight.db")
 
 db.run(`
     CREATE TABLE IF NOT EXISTS tokens (

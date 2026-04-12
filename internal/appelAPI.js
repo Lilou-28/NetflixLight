@@ -66,6 +66,14 @@ async function getMoviesFantasy(credential, page = 1) {
     return fetchTmdbJson("discover/movie", credential, { page: page, with_genres: 14 })
 }
 
+async function getSeriesActionAdventure(credential, page = 1) {
+    return fetchTmdbJson("discover/tv", credential, { page: page, with_genres: 10759 })
+}
+
+async function getSeriesSciFiFantasy(credential, page = 1) {
+    return fetchTmdbJson("discover/tv", credential, { page: page, with_genres: 10765 })
+}
+
 async function searchmovie(credential, page = 1, query) {
     return fetchTmdbJson("search/movie", credential, {page : page, query : query})
 }
@@ -78,6 +86,14 @@ async function getTvDetails(credential, tvId, language = "fr-FR") {
     return fetchTmdbJson(`tv/${tvId}`, credential, { append_to_response: "credits", language })
 }
 
+async function getTrendingAllWeek(credential, page = 1, language = "fr-FR") {
+    return fetchTmdbJson("trending/all/week", credential, { language, page })
+}
+
+async function getSimilar(credential, MovieId, page = 1, language = "fr-FR") {
+    return fetchTmdbJson(`movie/${MovieId}/similar`, credential, { language, page })
+}
+
 module.exports = {
     getMovies,
     getSeries,
@@ -85,7 +101,11 @@ module.exports = {
     getTopRatedSeries,
     getMoviesAction,
     getMoviesFantasy,
+    getSeriesActionAdventure,
+    getSeriesSciFiFantasy,
     searchmovie,
     getMovieDetails,
     getTvDetails,
+    getTrendingAllWeek,
+    getSimilar,
 }
