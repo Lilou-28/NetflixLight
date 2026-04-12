@@ -22,8 +22,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    <script src="/static/script/carrouselSeries.js"></script>
-    <script src="/static/script/carrouselTopRatedTv.js"></script>
+    <script src="/static/script/carrouselComponent.js"></script>
 
     <script type="module">
         import { initHeader, updateHeaderAuth } from '/static/js/header.js';
@@ -48,6 +47,28 @@
             localStorage.removeItem('nl_user');
             window.location.href = '/logout';
         });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            window.loadCarousel({
+        wrapperId: "series-wrapper",
+        swiperSelector: ".series-swiper",
+        endpoint: "/api/popular-mixed",
+        fetchErrorMessage: "Impossible de charger les séries",
+        emptyErrorMessage: "Aucune série reçue",
+        fallbackMediaType: "tv"
+    });
+
+    window.loadCarousel({
+        wrapperId: "top-rated-series-wrapper",
+        swiperSelector: ".top-rated-series-swiper",
+        endpoint: "/api/top-rated-mixed",
+        fetchErrorMessage: "Impossible de charger les séries mieux notées",
+        emptyErrorMessage: "Aucune série mieux notée reçue",
+        fallbackMediaType: "tv"
+    });
+});
     </script>
 </body>
 </html>
