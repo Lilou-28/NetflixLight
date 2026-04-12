@@ -23,15 +23,15 @@ function _renderHeader(header) {
   header.innerHTML = `
     <div class="nl-header__inner">
       <!-- Logo -->
-      <a href="#/" class="nl-logo" data-link>NETFLIXLIGHT</a>
+      <a href="/acceuil" class="nl-logo">NETFLIXLIGHT</a>
 
       <!-- Navigation principale -->
       <nav class="nl-nav" aria-label="Navigation principale">
-        <a href="#/" class="nl-nav__link" data-link data-route="home">Accueil</a>
-        <a href="#/series" class="nl-nav__link" data-link data-route="series">Séries</a>
-        <a href="#/films" class="nl-nav__link" data-link data-route="films">Films</a>
-        <a href="#/tendances" class="nl-nav__link" data-link data-route="tendances">Tendances</a>
-        <a href="#/ma-liste" class="nl-nav__link nl-nav__link--auth" data-link data-route="watchlist">Ma liste</a>
+        <a href="/acceuil" class="nl-nav__link" data-route="home">Accueil</a>
+        <a href="/series" class="nl-nav__link" data-route="series">Séries</a>
+        <a href="/films" class="nl-nav__link" data-route="films">Films</a>
+        <a href="/tendances" class="nl-nav__link" data-route="tendances">Tendances</a>
+        <a href="/ma-liste" class="nl-nav__link nl-nav__link--auth" data-route="watchlist">Ma liste</a>
       </nav>
 
       <!-- Zone droite : recherche + profil -->
