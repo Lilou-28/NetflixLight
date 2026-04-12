@@ -27,7 +27,17 @@ db.run(`
     expires_at DATETIME
     );
 `)
-
+db.run(`
+    CREATE TABLE IF NOT EXISTS favoris (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    media_id INTEGER,
+    media_type TEXT,
+    title TEXT,
+    poster_path TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+`)
 
 function registerUser(name, email, username, password, callback) {
     const query = `

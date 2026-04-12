@@ -767,6 +767,94 @@ const server = http.createServer((req, res) => {
                 });
         });
     }
+
+    else if (req.url === "/api/favoris" && req.method === "GET") {
+    const sessionToken = getSessionTokenFromCookie(req)
+    if (!sessionToken) {
+        res.writeHead(401, {"Content-Type": "application/json"})
+        res.end(JSON.stringify({error: "Session manquante"}))
+        return
+    }
+    checkToken(sessionToken, (isValid, userId) => {
+        if (!isValid || !userId) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Session invalide"}))
+            return
+        }
+        db.all("SELECT * FROM favoris WHERE user_id = ?", [userId], (err, rows) => {
+            if (err) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Erreur base de données"}))
+                return
+            }
+            res.writeHead(200, {"Content-Type": "application/json"})
+            res.end(JSON.stringify(rows))
+        })
+    })
+}
+else if (req.url === "/api/favoris" && req.method === "POST") {
+    const sessionToken = getSessionTokenFromCookie(req)
+    if (!sessionToken) {
+        res.writeHead(401, {"Content-Type": "application/json"})
+        res.end(JSON.stringify({error: "Session manquante"}))
+        return
+    }
+    let body = ""
+    req.on("data", chunk => { body += chunk.toString() })
+    req.on("end", () => {
+        checkToken(sessionToken, (isValid, userId) => {
+            if (!isValid || !userId) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+            const { media_id, media_type, title, poster_path } = JSON.parse(body)
+            db.run(
+                "INSERT OR IGNORE INTO favoris (user_id, media_id, media_type, title, poster_path) VALUES (?, ?, ?, ?, ?)",
+                [userId, media_id, media_type, title, poster_path],
+                (err) => {
+                    if (err) {
+                        res.writeHead(500, {"Content-Type": "application/json"})
+                        res.end(JSON.stringify({error: "Erreur base de données"}))
+                        return
+                    }
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({success: true}))
+                }
+            )
+        })
+    })
+}
+else if (req.url.startsWith("/api/favoris/") && req.method === "DELETE") {
+    const sessionToken = getSessionTokenFromCookie(req)
+    if (!sessionToken) {
+        res.writeHead(401, {"Content-Type": "application/json"})
+        res.end(JSON.stringify({error: "Session manquante"}))
+        return
+    }
+    const mediaId = req.url.replace("/api/favoris/", "")
+    checkToken(sessionToken, (isValid, userId) => {
+        if (!isValid || !userId) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Session invalide"}))
+            return
+        }
+        db.run(
+            "DELETE FROM favoris WHERE user_id = ? AND media_id = ?",
+            [userId, mediaId],
+            (err) => {
+                if (err) {
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur base de données"}))
+                    return
+                }
+                res.writeHead(200, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({success: true}))
+            }
+        )
+    })
+}
+
     else if (req.url.startsWith("/api/page/") && req.method === "GET") {
     const sessionToken = getSessionTokenFromCookie(req)
     const page = req.url.replace("/api/page/", "")
