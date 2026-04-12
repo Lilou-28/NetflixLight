@@ -738,6 +738,27 @@ const server = http.createServer((req, res) => {
             });
         });
     }
+
+    else if (req.method === "GET" && req.url === "/ma-liste") {
+    const sessionToken = getSessionTokenFromCookie(req);
+    if (!sessionToken) {
+        res.writeHead(302, { "Location": "/login" });
+        res.end();
+        return;
+    }
+    checkToken(sessionToken, (isValid) => {
+        if (!isValid) {
+            res.writeHead(302, { "Location": "/login" });
+            res.end();
+            return;
+        }
+        fs.readFile(path.join(__dirname, "../web/templates/ma-liste.html"), (err, data) => {
+            res.writeHead(200, { "Content-Type": "text/html" });
+            res.end(data);
+        });
+    });
+}
+
     else if (req.url.startsWith("/search-movie") && req.method === "GET") {
 
         const urlObj = new URL(req.url, `http://${req.headers.host}`);
