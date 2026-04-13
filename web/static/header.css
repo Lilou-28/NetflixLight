@@ -36,7 +36,23 @@
   border: 1px solid rgba(255,255,255,0.6); border-radius: 4px;
   padding: 4px 10px; background: rgba(0,0,0,0.75);
 }
-.nl-search__input { background: transparent; border: none; outline: none; color: #fff; font-size: 0.875rem; width: 180px; }
+.nl-search__input {
+  flex: 1 1 180px;
+  min-width: 0;
+  width: 180px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  outline: none;
+  color: #fff;
+  font-size: 0.875rem;
+  line-height: 1.2;
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+}
 .nl-search__input::placeholder { color: #aaa; }
 
 .nl-search {

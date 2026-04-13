@@ -8,28 +8,46 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
     <title>NetflixLight - details</title>
 </head>
-<body>
+<body class="detail-page-body">
     <header id="main-header"></header>
 
-    <main class="hero">
-        <img src="{{backdrop_path}}" alt="Banner du film" />
-        <h1>{{title}}</h1>
-        <div class="hero-actions">
-            <button id="favori-btn" class="favori-btn">♡ Ajouter aux favoris</button>
-        </div>
-        <img class="detail-poster" src="{{poster}}" alt="Affiche du film" />
-        <p>{{overview}}</p>
-        <p>Genres : {{genres}}</p>
-        <p>Date de sortie : {{release_date}}</p>
-        <p>Note : {{vote_average}} ({{vote_count}} avis)</p>
-        <p>{{runtime_label}} : {{runtime}}</p>
-        <p>Casting : {{cast}}</p>
-        
-        <section class="cast-section" aria-labelledby="cast-title">
-            <h2 id="cast-title">Acteurs</h2>
-                <div class="cast-grid">
-                    {{cast_cards}}
+    <main class="detail-page">
+        <section class="detail-hero" aria-label="Bannière du film">
+            <img class="detail-hero__bg" src="{{backdrop_path}}" alt="Banner du film" />
+            <div class="detail-hero__overlay"></div>
+
+            
+        </section>
+
+        <section class="detail-content" aria-label="Informations du titre">
+            <div class="detail-content__inner">
+                <div class="detail-content__lead">
+                    <img class="detail-poster" src="{{poster}}" alt="Affiche du film" />
+
+                    <div class="detail-content__intro">
+                        <h2>Informations</h2>
+                        <div class="detail-hero__content">
+                        <h1>{{title}}</h1>
+                        <div class="hero-actions">
+                            <button id="favori-btn" class="favori-btn">♡ Ajouter aux favoris</button>
+                        </div>
+                    </div>
+                        <p class="detail-content__summary">{{overview}}</p>
+                        <div class="detail-content__facts">
+                            <p><strong>Genres :</strong> {{genres}}</p>
+                            <p><strong>Date de sortie :</strong> {{release_date}}</p>
+                            <p><strong>Note :</strong> {{vote_average}} ({{vote_count}} avis)</p>
+                            <p><strong>{{runtime_label}} :</strong> {{runtime}}</p>
+                        </div>
+                    </div>
                 </div>
+            </div>
+        </section>
+        <section class="cast-section" aria-labelledby="cast-title">
+            <h2 id="cast-title">Casting</h2>
+            <div class="cast-grid">
+                {{cast_cards}}
+            </div>
         </section>
 
         <section class="trailer-section" aria-labelledby="trailer-title">
@@ -37,10 +55,12 @@
             {{trailer_block}}
         </section>
 
-        <h3>Films similaires</h3>
-        <div class="swiper swiper-movies similar-swiper">
-            <div class="swiper-wrapper" id="similar-wrapper"></div>
-        </div>
+        <section class="detail-similar">
+            <h3>Films similaires</h3>
+            <div class="swiper swiper-movies similar-swiper">
+                <div class="swiper-wrapper" id="similar-wrapper"></div>
+            </div>
+        </section>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>

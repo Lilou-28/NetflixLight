@@ -10,11 +10,19 @@
 <body>
     <header id="main-header"></header>
 
-    <main class="hero">
-        <h1>Mon profil</h1>
-        <p>Nom: <strong id="name">...</strong></p>
-        <p>Username: <strong id="username">...</strong></p>
-        <p>Email: <strong id="email">...</strong></p>
+    <main class="profile-page">
+        <section class="profile-card" aria-label="Informations du profil">
+            <div class="profile-avatar" id="profile-avatar">U</div>
+            <div class="profile-content">
+                <p class="profile-eyebrow">Mon espace</p>
+                <h1>Mon profil</h1>
+                <div class="profile-grid">
+                    <p><span>Nom</span><strong id="name">...</strong></p>
+                    <p><span>Username</span><strong id="username">...</strong></p>
+                    <p><span>Email</span><strong id="email">...</strong></p>
+                </div>
+            </div>
+        </section>
     </main>
 
     <script type="module">
@@ -30,6 +38,12 @@
                 document.getElementById("name").textContent = data.name || "-";
                 document.getElementById("username").textContent = data.username || "-";
                 document.getElementById("email").textContent = data.email || "-";
+
+                const avatar = document.getElementById("profile-avatar");
+                if (avatar) {
+                    const letter = (data.username || data.name || "U").charAt(0).toUpperCase();
+                    avatar.textContent = letter;
+                }
             },
         });
 

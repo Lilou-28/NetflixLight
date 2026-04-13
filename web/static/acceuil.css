@@ -35,7 +35,7 @@
 	opacity: 0;
 	transform: translateY(8px);
 	transition: opacity 0.2s ease, transform 0.2s ease;
-	pointer-events: none;
+	pointer-events: auto;
 	color: #fff;
 }
 .movie-slide-btn:hover .movie-slide-btn__hover,
@@ -77,6 +77,42 @@
 	-webkit-box-orient: vertical;
 	overflow: hidden;
 }
+
+.movie-slide-btn__fav {
+	position: absolute;
+	top: 0.75rem;
+	right: 0.75rem;
+	width: 2rem;
+	height: 2rem;
+	display: grid;
+	place-items: center;
+	border-radius: 999px;
+	border: 1px solid rgba(255, 255, 255, 0.24);
+	background: rgba(0, 0, 0, 0.58);
+	color: #fff;
+	font-size: 1.15rem;
+	line-height: 1;
+	font-weight: 700;
+	user-select: none;
+	cursor: pointer;
+	transition: transform 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;
+}
+
+.movie-slide-btn__fav:hover {
+	transform: scale(1.06);
+	border-color: rgba(255, 255, 255, 0.38);
+	background: rgba(0, 0, 0, 0.78);
+}
+
+.movie-slide-btn__fav.is-active {
+	background: rgba(229, 9, 20, 0.92);
+	border-color: rgba(229, 9, 20, 0.98);
+}
+
+.movie-slide-btn__fav.is-loading {
+	opacity: 0.7;
+	pointer-events: none;
+}
 body {
     margin: auto;
     min-height: 100vh;
@@ -88,7 +124,7 @@ body {
 
 .hero-banner {
 	position: relative;
-	width: min(1100px, calc(100% - 4rem));
+	width: calc(100% - 4rem);
 	min-height: 420px;
 	margin: 1.5rem auto 2rem;
 	border-radius: 16px;
@@ -150,7 +186,7 @@ body {
 }
 
 .swiper-movies, .swiper-series, .swiper-top-rated-movies, .swiper-top-rated-tv {
-	width: min(1100px, calc(100% - 40rem));
+	width: calc(100% - 4rem);
 	height: auto;
 	margin: 0 auto 2rem;
 	padding: 0.5rem 2.25rem 2rem;
@@ -208,7 +244,7 @@ body {
 }
 
 h3 {
-	width: min(1100px, calc(100% - 40rem));
+	width: calc(100% - 4rem);
 	margin: 0.75rem auto;
     color: white;
 }
@@ -244,6 +280,14 @@ button {
 		width: calc(100% - 1.5rem);
 		min-height: 340px;
 		margin: 1rem auto 1.5rem;
+	}
+
+	.swiper-movies,
+	.swiper-series,
+	.swiper-top-rated-movies,
+	.swiper-top-rated-tv,
+	h3 {
+		width: calc(100% - 1.5rem);
 	}
 
 	.hero-banner__content {
