@@ -4,16 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/acceuil.css">
+    <link rel="stylesheet" href="/static/ma-liste.css">
     <link rel="stylesheet" href="/static/header.css">
     <title>NetflixLight - Ma liste</title>
 </head>
 <body>
     <header id="main-header"></header>
 
-    <main>
-        <h2>Ma liste</h2>
+    <main class="watchlist-main">
+        <h2 class="watchlist-title">Ma liste</h2>
         <div id="favoris-grid" class="favoris-grid"></div>
-        <p id="favoris-empty" hidden>Vous n'avez pas encore de favoris.</p>
+        <p id="favoris-empty" class="favoris-empty" hidden>Vous n'avez pas encore de favoris.</p>
     </main>
 
     <script src="/static/script/favoris.js"></script>
@@ -64,9 +65,11 @@
                     ? `https://image.tmdb.org/t/p/w500${favori.poster_path}`
                     : "https://via.placeholder.com/500x750?text=No+Image";
                 img.alt = favori.title;
+                img.className = "favori-card__image";
 
                 const title = document.createElement("p");
                 title.textContent = favori.title;
+                title.className = "favori-card__title";
 
                 const removeBtn = document.createElement("button");
                 removeBtn.textContent = "✕ Retirer";

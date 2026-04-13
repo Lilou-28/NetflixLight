@@ -256,7 +256,7 @@ body {
 
 .cast-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
     gap: 1rem;
 }
 
@@ -265,11 +265,13 @@ body {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    width: 100%;
 }
 
 .cast-card__image {
-    width: 180px;
-    height: 300px;
+    width: 100%;
+    max-width: 170px;
+    height: auto;
     aspect-ratio: 2 / 3;
     object-fit: cover;
     border-radius: 14px;
@@ -481,7 +483,7 @@ body {
     }
 
     .cast-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(130px, 1fr));
     }
 
     .hero > h3,
