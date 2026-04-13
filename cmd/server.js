@@ -1266,7 +1266,17 @@ else if (req.url === "/api/favoris" && req.method === "POST") {
                 res.end(JSON.stringify({error: "Session invalide"}))
                 return
             }
-            const { media_id, media_type, title, poster_path } = JSON.parse(body)
+
+            let parsedBody
+            try {
+                parsedBody = JSON.parse(body)
+            } catch (_error) {
+                res.writeHead(400, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "JSON invalide"}))
+                return
+            }
+
+            const { media_id, media_type, title, poster_path } = parsedBody
             db.run(
                 "INSERT OR IGNORE INTO favoris (user_id, media_id, media_type, title, poster_path) VALUES (?, ?, ?, ?, ?)",
                 [userId, media_id, media_type, title, poster_path],
@@ -1290,7 +1300,14 @@ else if (req.url.startsWith("/api/favoris/") && req.method === "DELETE") {
         res.end(JSON.stringify({error: "Session manquante"}))
         return
     }
+
     const mediaId = req.url.replace("/api/favoris/", "")
+    if (!/^\d+$/.test(mediaId)) {
+        res.writeHead(400, {"Content-Type": "application/json"})
+        res.end(JSON.stringify({error: "media_id invalide"}))
+        return
+    }
+
     checkToken(sessionToken, (isValid, userId) => {
         if (!isValid || !userId) {
             res.writeHead(401, {"Content-Type": "application/json"})

@@ -102,14 +102,12 @@ let searchLatestQueryId = 0;
 function _bindSearchBehavior(header) {
   const input = header.querySelector("#nl-search-input");
   const searchBox = header.querySelector("#nl-search-box");
-  console.log("Binding search behavior", { inputFound: !!input, searchBoxFound: !!searchBox });
   if (!input || !searchBox) return;
 
   let debounceTimer = null;
 
   // Créer le conteneur de suggestions s'il n'existe pas
   let suggestionsList = header.querySelector("#nl-suggestions-list");
-  console.log("Found suggestions list:", !!suggestionsList);
   if (!suggestionsList) {
     suggestionsList = document.createElement("div");
     suggestionsList.id = "nl-suggestions-list";
@@ -128,16 +126,13 @@ function _bindSearchBehavior(header) {
   input.addEventListener("input", () => {
     clearTimeout(debounceTimer);
     const query = input.value.trim();
-    console.log("Search input:", query);
 
     debounceTimer = setTimeout(() => {
       if (query.length < 2) {
-        console.log("Query too short");
         suggestionsList.innerHTML = "";
         suggestionsList.style.display = "none";
         return;
       }
-      console.log("Performing search for:", query);
       _performHeaderSearch(query, suggestionsList);
     }, 300);
   });
@@ -152,25 +147,18 @@ function _bindSearchBehavior(header) {
 
 async function _performHeaderSearch(query, suggestionsList) {
   const queryId = ++searchLatestQueryId;
-  console.log("Starting search", { query, queryId });
 
   try {
     const response = await fetch(`/search-movie?query=${encodeURIComponent(query)}`, {
       credentials: "same-origin",
     });
 
-    console.log("Response status:", response.status);
-
     if (queryId !== searchLatestQueryId) {
-      console.log("Query outdated, skipping");
       return;
     }
 
     const payload = await response.json();
-    console.log("Search results:", payload);
-    
     const items = Array.isArray(payload?.results) ? payload.results : [];
-    console.log("Items count:", items.length);
 
     suggestionsList.innerHTML = "";
 
@@ -184,10 +172,17 @@ async function _performHeaderSearch(query, suggestionsList) {
       const suggestion = document.createElement("button");
       suggestion.type = "button";
       suggestion.className = "nl-suggestion-item";
-      suggestion.innerHTML = `
-        <img src="${poster}" alt="${title}" class="nl-suggestion-img">
-        <span>${title}</span>
-      `;
+
+      const image = document.createElement("img");
+      image.src = poster;
+      image.alt = title;
+      image.className = "nl-suggestion-img";
+
+      const label = document.createElement("span");
+      label.textContent = title;
+
+      suggestion.appendChild(image);
+      suggestion.appendChild(label);
 
       suggestion.addEventListener("click", () => {
         window.location.href = `/details?type=${mediaType}&id=${item.id}`;
@@ -196,9 +191,7 @@ async function _performHeaderSearch(query, suggestionsList) {
       suggestionsList.appendChild(suggestion);
     }
 
-    const displayStyle = items.length ? "flex" : "none";
-    console.log("Setting display style:", displayStyle);
-    suggestionsList.style.display = displayStyle;
+    suggestionsList.style.display = items.length ? "flex" : "none";
   } catch (err) {
     console.error("Erreur recherche header:", err);
     suggestionsList.innerHTML = "";
@@ -249,7 +242,6 @@ function _bindNavHighlight(header) {
     const hash = window.location.hash || "#/";
     const links = header.querySelectorAll(".nl-nav__link[data-route]");
     links.forEach((link) => {
-      const route = link.getAttribute("data-route");
       const isActive = hash.includes(
         link.getAttribute("href").replace("#", ""),
       );

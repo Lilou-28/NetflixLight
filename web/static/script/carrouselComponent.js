@@ -93,7 +93,11 @@ window.loadCarousel = async function loadCarousel(config) {
 
     initCarouselSwiper(wrapperId, swiperSelector);
   } catch (error) {
-    wrapper.innerHTML = `<div class="swiper-slide">${error.message}</div>`;
+    wrapper.innerHTML = "";
+    const errorSlide = document.createElement("div");
+    errorSlide.className = "swiper-slide";
+    errorSlide.textContent = error instanceof Error ? error.message : "Erreur lors du chargement";
+    wrapper.appendChild(errorSlide);
     initCarouselSwiper(wrapperId, swiperSelector);
   }
 };
