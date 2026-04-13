@@ -50,6 +50,7 @@ function _renderHeader(header) {
             aria-label="Rechercher"
           />
         </div>
+        <div id="nl-suggestions-list" class="nl-suggestions-list"></div>
       </div>
 
         <!-- Profil (affiché si connecté) -->
@@ -93,37 +94,116 @@ function _bindScrollBehavior(header) {
 }
 
 /*
-   RECHERCHE avec debounce 300ms
+   RECHERCHE avec debounce 300ms et suggestions
  */
+
+let searchLatestQueryId = 0;
 
 function _bindSearchBehavior(header) {
   const input = header.querySelector("#nl-search-input");
-  if (!input) return;
+  const searchBox = header.querySelector("#nl-search-box");
+  console.log("Binding search behavior", { inputFound: !!input, searchBoxFound: !!searchBox });
+  if (!input || !searchBox) return;
 
   let debounceTimer = null;
+
+  // Créer le conteneur de suggestions s'il n'existe pas
+  let suggestionsList = header.querySelector("#nl-suggestions-list");
+  console.log("Found suggestions list:", !!suggestionsList);
+  if (!suggestionsList) {
+    suggestionsList = document.createElement("div");
+    suggestionsList.id = "nl-suggestions-list";
+    suggestionsList.className = "nl-suggestions-list";
+    searchBox.parentElement.appendChild(suggestionsList);
+  }
 
   input.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       input.value = "";
-      document.dispatchEvent(new CustomEvent("nl:search:clear"));
+      suggestionsList.innerHTML = "";
+      suggestionsList.style.display = "none";
     }
   });
 
   input.addEventListener("input", () => {
     clearTimeout(debounceTimer);
     const query = input.value.trim();
+    console.log("Search input:", query);
 
     debounceTimer = setTimeout(() => {
       if (query.length < 2) {
-        document.dispatchEvent(new CustomEvent("nl:search:clear"));
+        console.log("Query too short");
+        suggestionsList.innerHTML = "";
+        suggestionsList.style.display = "none";
         return;
       }
-      document.dispatchEvent(new CustomEvent("nl:search", { detail: { query } }));
-      if (!window.location.hash.startsWith("#/recherche")) {
-        window.location.hash = `#/recherche?q=${encodeURIComponent(query)}`;
-      }
+      console.log("Performing search for:", query);
+      _performHeaderSearch(query, suggestionsList);
     }, 300);
   });
+
+  // Fermer les suggestions en cliquant ailleurs
+  document.addEventListener("click", (e) => {
+    if (!header.contains(e.target) && !suggestionsList.contains(e.target)) {
+      suggestionsList.style.display = "none";
+    }
+  });
+}
+
+async function _performHeaderSearch(query, suggestionsList) {
+  const queryId = ++searchLatestQueryId;
+  console.log("Starting search", { query, queryId });
+
+  try {
+    const response = await fetch(`/search-movie?query=${encodeURIComponent(query)}`, {
+      credentials: "same-origin",
+    });
+
+    console.log("Response status:", response.status);
+
+    if (queryId !== searchLatestQueryId) {
+      console.log("Query outdated, skipping");
+      return;
+    }
+
+    const payload = await response.json();
+    console.log("Search results:", payload);
+    
+    const items = Array.isArray(payload?.results) ? payload.results : [];
+    console.log("Items count:", items.length);
+
+    suggestionsList.innerHTML = "";
+
+    for (const item of items) {
+      const title = item.title || item.name || "Titre inconnu";
+      const mediaType = item.media_type === "tv" ? "tv" : "movie";
+      const poster = item.poster_path
+        ? `https://image.tmdb.org/t/p/w185${item.poster_path}`
+        : "https://via.placeholder.com/92x138?text=No+Image";
+
+      const suggestion = document.createElement("button");
+      suggestion.type = "button";
+      suggestion.className = "nl-suggestion-item";
+      suggestion.innerHTML = `
+        <img src="${poster}" alt="${title}" class="nl-suggestion-img">
+        <span>${title}</span>
+      `;
+
+      suggestion.addEventListener("click", () => {
+        window.location.href = `/details?type=${mediaType}&id=${item.id}`;
+      });
+
+      suggestionsList.appendChild(suggestion);
+    }
+
+    const displayStyle = items.length ? "flex" : "none";
+    console.log("Setting display style:", displayStyle);
+    suggestionsList.style.display = displayStyle;
+  } catch (err) {
+    console.error("Erreur recherche header:", err);
+    suggestionsList.innerHTML = "";
+    suggestionsList.style.display = "none";
+  }
 }
 
 /*

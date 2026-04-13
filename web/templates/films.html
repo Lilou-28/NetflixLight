@@ -32,6 +32,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="/static/script/animationHover.js"></script>
     <script src="/static/script/carrouselComponent.js"></script>
 
     <script type="module">
@@ -64,7 +65,7 @@
             window.loadCarousel({
                 wrapperId: "movies-wrapper",
                 swiperSelector: ".movies-swiper",
-                endpoint: "/api/popular-mixed",
+                endpoint: "/api/popular-movies",
                 fetchErrorMessage: "Impossible de charger les films",
                 emptyErrorMessage: "Aucun film reçu",
                 fallbackMediaType: "movie"
@@ -73,7 +74,7 @@
             window.loadCarousel({
                 wrapperId: "top-rated-movies-wrapper",
                 swiperSelector: ".top-rated-movies-swiper",
-                endpoint: "/api/top-rated-mixed",
+                endpoint: "/api/top-rated-movies",
                 fetchErrorMessage: "Impossible de charger les films mieux notés",
                 emptyErrorMessage: "Aucun film mieux noté reçu",
                 fallbackMediaType: "movie"
@@ -82,7 +83,7 @@
             window.loadCarousel({
                 wrapperId: "movie-action-wrapper",
                 swiperSelector: ".genre-action-swiper",
-                endpoint: "/discover/movie-action",
+                endpoint: "/discover/movie-action-only",
                 fetchErrorMessage: "Impossible de charger les films d'action",
                 emptyErrorMessage: "Aucun film d'action reçu",
                 fallbackMediaType: "movie"
@@ -91,7 +92,7 @@
             window.loadCarousel({
                 wrapperId: "movie-fantasy-wrapper",
                 swiperSelector: ".genre-fantasy-swiper",
-                endpoint: "/discover/movie-fantasy",
+                endpoint: "/discover/movie-fantasy-only",
                 fetchErrorMessage: "Impossible de charger les films fantasy",
                 emptyErrorMessage: "Aucun film fantasy reçu",
                 fallbackMediaType: "movie"

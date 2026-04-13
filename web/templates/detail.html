@@ -22,6 +22,11 @@
         <p>{{runtime_label}} : {{runtime}}</p>
         <p>Casting : {{cast}}</p>
 
+        <section class="trailer-section" aria-labelledby="trailer-title">
+            <h2 id="trailer-title">Bande d'annonce</h2>
+            {{trailer_block}}
+        </section>
+
         <button id="favori-btn" class="favori-btn">♡ Ajouter aux favoris</button>
 
         <section class="cast-section" aria-labelledby="cast-title">
@@ -37,8 +42,11 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="/static/script/animationHover.js"></script>
     <script src="/static/script/carrouselComponent.js"></script>
     <script src="/static/script/favoris.js"></script>
+    <script src="/static/script/gestionSon.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script type="module">
         import { initHeader, updateHeaderAuth } from '/static/js/header.js';
 

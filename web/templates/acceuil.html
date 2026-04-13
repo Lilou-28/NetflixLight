@@ -11,20 +11,6 @@
 <body>
     <header id="main-header"></header>
 
-    <div class="search-container">
-        <form id="search-form">
-            <input 
-                type="text" 
-                id="search-input" 
-                placeholder="Rechercher un film..." 
-                autocomplete="off"
-            >
-            <button type="submit" id="search-button">
-                <span>🔍</span>
-            </button>
-        </form>
-    </div>
-    <div id="suggestions-list" class="suggestions-list"></div>
     <section class="hero-banner" id="hero-banner" aria-label="Film mis en avant">
         <div class="hero-banner__overlay"></div>
         <div class="hero-banner__content">
@@ -47,17 +33,20 @@
         <div class="swiper swiper-series top-rated-mixed-swiper">
 		<div class="swiper-wrapper" id="top-rated-mixed-wrapper"></div>
 	</div>
-    <h3>Film d'action</h3>
+    <h3>Film et series d'action</h3>
     <div class="swiper swiper-movies genre-action-swiper">
 		<div class="swiper-wrapper" id="movie-action-wrapper"></div>
 	</div>
-    <h3>Film Fantasy</h3>
+    <h3>Film et series de fantasy</h3>
     <div class="swiper swiper-movies genre-fantasy-swiper">
 		<div class="swiper-wrapper" id="movie-fantasy-wrapper"></div>
 	</div>
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="/static/script/animationHover.js"></script>
 	<script src="/static/script/carrouselComponent.js"></script>
+	<script src="/static/script/searchbar.js"></script>
+	<script src="/static/script/heroBanner.js"></script>
 
     <script type="module">
     import { initHeader, updateHeaderAuth } from '/static/js/header.js';

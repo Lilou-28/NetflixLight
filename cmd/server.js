@@ -96,7 +96,7 @@ const server = http.createServer((req, res) => {
                             : formattedRuntime;
 
                         const castMembers = Array.isArray(movie.credits && movie.credits.cast)
-                            ? movie.credits.cast.slice(0, 5)
+                            ? movie.credits.cast.slice(0, 14)
                             : [];
 
                         const castSummary = castMembers.length
@@ -476,6 +476,80 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
+    else if (req.url === "/api/popular-movies" && req.method === "GET") {
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Session manquante"}))
+            return
+        }
+
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+
+            if (!tmdbBearerToken) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
+                return
+            }
+
+            const page = randomInt(1, 501)
+            getMovies(tmdbBearerToken, page)
+                .then((data) => {
+                    const results = Array.isArray(data.results)
+                        ? data.results.map((item) => ({ ...item, media_type: "movie" }))
+                        : []
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({ results }))
+                })
+                .catch((error) => {
+                    console.error("Erreur TMDB:", error.message)
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur lors de la récupération des films populaires"}))
+                })
+        })
+    }
+    else if (req.url === "/api/popular-series" && req.method === "GET") {
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Session manquante"}))
+            return
+        }
+
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+
+            if (!tmdbBearerToken) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
+                return
+            }
+
+            const page = randomInt(1, 501)
+            getSeries(tmdbBearerToken, page)
+                .then((data) => {
+                    const results = Array.isArray(data.results)
+                        ? data.results.map((item) => ({ ...item, media_type: "tv" }))
+                        : []
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({ results }))
+                })
+                .catch((error) => {
+                    console.error("Erreur TMDB:", error.message)
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur lors de la récupération des séries populaires"}))
+                })
+        })
+    }
     else if (req.url === "/api/trending-mixed" && req.method === "GET") {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -556,6 +630,80 @@ const server = http.createServer((req, res) => {
                     console.error("Erreur TMDB:", error.message)
                     res.writeHead(500, {"Content-Type": "application/json"})
                     res.end(JSON.stringify({error: "Erreur lors de la récupération du carrousel mieux note mixte"}))
+                })
+        })
+    }
+    else if (req.url === "/api/top-rated-movies" && req.method === "GET") {
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Session manquante"}))
+            return
+        }
+
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+
+            if (!tmdbBearerToken) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
+                return
+            }
+
+            const page = randomInt(1, 143)
+            getTopRatedMovies(tmdbBearerToken, page)
+                .then((data) => {
+                    const results = Array.isArray(data.results)
+                        ? data.results.map((item) => ({ ...item, media_type: "movie" }))
+                        : []
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({ results }))
+                })
+                .catch((error) => {
+                    console.error("Erreur TMDB:", error.message)
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur lors de la récupération des films mieux notés"}))
+                })
+        })
+    }
+    else if (req.url === "/api/top-rated-series" && req.method === "GET") {
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Session manquante"}))
+            return
+        }
+
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+
+            if (!tmdbBearerToken) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
+                return
+            }
+
+            const page = randomInt(1, 143)
+            getTopRatedSeries(tmdbBearerToken, page)
+                .then((data) => {
+                    const results = Array.isArray(data.results)
+                        ? data.results.map((item) => ({ ...item, media_type: "tv" }))
+                        : []
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({ results }))
+                })
+                .catch((error) => {
+                    console.error("Erreur TMDB:", error.message)
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur lors de la récupération des séries mieux notées"}))
                 })
         })
     }
@@ -649,7 +797,44 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({error: "Erreur lors de la récupération des contenus action"}))
             })
         })
-    }else if (req.url === "/discover/movie-fantasy" && req.method === "GET"){
+    }
+    else if (req.url === "/discover/movie-action-only" && req.method === "GET"){
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify
+            ({error: "Session manquante"}))
+            return
+        }
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+            if (!tmdbBearerToken) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
+                return
+            }
+            const page = randomInt(1, 500)
+            getMoviesAction(tmdbBearerToken, page)
+                .then((data) => {
+                    const results = Array.isArray(data.results)
+                        ? data.results.map((item) => ({ ...item, media_type: "movie" }))
+                        : []
+
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({ results }))
+                })
+                .catch((error) => {
+                    console.error("Erreur TMDB:", error.message)
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur lors de la récupération des films action"}))
+                })
+        })
+    }
+    else if (req.url === "/discover/movie-fantasy" && req.method === "GET"){
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
             res.writeHead(401, {"Content-Type": "application/json"})
@@ -689,6 +874,42 @@ const server = http.createServer((req, res) => {
                 res.writeHead(500, {"Content-Type": "application/json"})
                 res.end(JSON.stringify({error: "Erreur lors de la récupération des contenus fantasy"}))
             })
+        })
+    }
+    else if (req.url === "/discover/movie-fantasy-only" && req.method === "GET"){
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify
+            ({error: "Session manquante"}))
+            return
+        }
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+            if (!tmdbBearerToken) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
+                return
+            }
+            const page = randomInt(1, 500)
+            getMoviesFantasy(tmdbBearerToken, page)
+                .then((data) => {
+                    const results = Array.isArray(data.results)
+                        ? data.results.map((item) => ({ ...item, media_type: "movie" }))
+                        : []
+
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({ results }))
+                })
+                .catch((error) => {
+                    console.error("Erreur TMDB:", error.message)
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur lors de la récupération des films fantasy"}))
+                })
         })
     }
     else if (req.url === "/logout") {
