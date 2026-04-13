@@ -29,10 +29,13 @@ const mimeTypes = {
 
 const server = http.createServer((req, res) => {
     if (req.url === "/") {
-        fs.readFile(path.join(__dirname,"../web/templates/index.html"), (err, data) => {
-            res.writeHead(200, {"Content-Type" : "text/html" })
-            res.end(data)
-        })
+    const sessionToken = getSessionTokenFromCookie(req);
+    if (sessionToken) {
+        res.writeHead(302, { "Location": "/acceuil" });
+    } else {
+        res.writeHead(302, { "Location": "/login" });
+    }
+    res.end();
     }
     else if (req.url.startsWith("/details")) {
         const sessionToken = getSessionTokenFromCookie(req);
@@ -722,8 +725,67 @@ const server = http.createServer((req, res) => {
             })
         })
     }
+    else if (req.method === "GET" && req.url === "/series") {
+        const sessionToken = getSessionTokenFromCookie(req);
+        if (!sessionToken) {
+            res.writeHead(302, { "Location": "/login" });
+            res.end();
+            return;
+        }
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(302, { "Location": "/login" });
+                res.end();
+                return;
+            }
+            fs.readFile(path.join(__dirname, "../web/templates/series.html"), (err, data) => {
+                res.writeHead(200, { "Content-Type": "text/html" });
+                res.end(data);
+            });
+        });
+    }
+    else if (req.method === "GET" && req.url === "/films") {
+        const sessionToken = getSessionTokenFromCookie(req);
+        if (!sessionToken) {
+            res.writeHead(302, { "Location": "/login" });
+            res.end();
+            return;
+        }
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(302, { "Location": "/login" });
+                res.end();
+                return;
+            }
+            fs.readFile(path.join(__dirname, "../web/templates/films.html"), (err, data) => {
+                res.writeHead(200, { "Content-Type": "text/html" });
+                res.end(data);
+            });
+        });
+    }
+
+    else if (req.method === "GET" && req.url === "/ma-liste") {
+    const sessionToken = getSessionTokenFromCookie(req);
+    if (!sessionToken) {
+        res.writeHead(302, { "Location": "/login" });
+        res.end();
+        return;
+    }
+    checkToken(sessionToken, (isValid) => {
+        if (!isValid) {
+            res.writeHead(302, { "Location": "/login" });
+            res.end();
+            return;
+        }
+        fs.readFile(path.join(__dirname, "../web/templates/ma-liste.html"), (err, data) => {
+            res.writeHead(200, { "Content-Type": "text/html" });
+            res.end(data);
+        });
+    });
+}
+
     else if (req.url.startsWith("/search-movie") && req.method === "GET") {
-        
+
         const urlObj = new URL(req.url, `http://${req.headers.host}`);
         const query = urlObj.searchParams.get("query");
 
@@ -751,6 +813,155 @@ const server = http.createServer((req, res) => {
                 });
         });
     }
+
+    else if (req.url === "/api/favoris" && req.method === "GET") {
+    const sessionToken = getSessionTokenFromCookie(req)
+    if (!sessionToken) {
+        res.writeHead(401, {"Content-Type": "application/json"})
+        res.end(JSON.stringify({error: "Session manquante"}))
+        return
+    }
+    checkToken(sessionToken, (isValid, userId) => {
+        if (!isValid || !userId) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Session invalide"}))
+            return
+        }
+        db.all("SELECT * FROM favoris WHERE user_id = ?", [userId], (err, rows) => {
+            if (err) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Erreur base de données"}))
+                return
+            }
+            res.writeHead(200, {"Content-Type": "application/json"})
+            res.end(JSON.stringify(rows))
+        })
+    })
+}
+else if (req.url === "/api/favoris" && req.method === "POST") {
+    const sessionToken = getSessionTokenFromCookie(req)
+    if (!sessionToken) {
+        res.writeHead(401, {"Content-Type": "application/json"})
+        res.end(JSON.stringify({error: "Session manquante"}))
+        return
+    }
+    let body = ""
+    req.on("data", chunk => { body += chunk.toString() })
+    req.on("end", () => {
+        checkToken(sessionToken, (isValid, userId) => {
+            if (!isValid || !userId) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+            const { media_id, media_type, title, poster_path } = JSON.parse(body)
+            db.run(
+                "INSERT OR IGNORE INTO favoris (user_id, media_id, media_type, title, poster_path) VALUES (?, ?, ?, ?, ?)",
+                [userId, media_id, media_type, title, poster_path],
+                (err) => {
+                    if (err) {
+                        res.writeHead(500, {"Content-Type": "application/json"})
+                        res.end(JSON.stringify({error: "Erreur base de données"}))
+                        return
+                    }
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({success: true}))
+                }
+            )
+        })
+    })
+}
+else if (req.url.startsWith("/api/favoris/") && req.method === "DELETE") {
+    const sessionToken = getSessionTokenFromCookie(req)
+    if (!sessionToken) {
+        res.writeHead(401, {"Content-Type": "application/json"})
+        res.end(JSON.stringify({error: "Session manquante"}))
+        return
+    }
+    const mediaId = req.url.replace("/api/favoris/", "")
+    checkToken(sessionToken, (isValid, userId) => {
+        if (!isValid || !userId) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Session invalide"}))
+            return
+        }
+        db.run(
+            "DELETE FROM favoris WHERE user_id = ? AND media_id = ?",
+            [userId, mediaId],
+            (err) => {
+                if (err) {
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur base de données"}))
+                    return
+                }
+                res.writeHead(200, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({success: true}))
+            }
+        )
+    })
+}
+
+    else if (req.url.startsWith("/api/page/") && req.method === "GET") {
+    const sessionToken = getSessionTokenFromCookie(req)
+    const page = req.url.replace("/api/page/", "")
+
+    const publicPages = ["login", "register"]
+    const isPublic = publicPages.includes(page)
+
+    const servePartial = () => {
+        const templateMap = {
+            "acceuil":  "../web/templates/acceuil.html",
+            "login":    "../web/templates/login.html",
+            "register": "../web/templates/register.html",
+            "userinfo": "../web/templates/userinfo.html",
+            "detail":   "../web/templates/detail.html",
+            "films":    "../web/templates/films.html",
+            "series":   "../web/templates/series.html",
+            "ma-liste": "../web/templates/ma-liste.html",
+        }
+
+        const filePath = templateMap[page]
+        if (!filePath) {
+            res.writeHead(404, {"Content-Type": "text/plain"})
+            res.end("Page introuvable")
+            return
+        }
+
+        fs.readFile(path.join(__dirname, filePath), "utf8", (err, data) => {
+            if (err) {
+                res.writeHead(500, {"Content-Type": "text/plain"})
+                res.end("Erreur serveur")
+                return
+            }
+
+            // Extraire uniquement le contenu du <main>
+            const match = data.match(/<main[^>]*>([\s\S]*?)<\/main>/)
+            const content = match ? `<main>${match[1]}</main>` : data
+
+            res.writeHead(200, {"Content-Type": "text/html"})
+            res.end(content)
+        })
+    }
+
+    if (isPublic) {
+        servePartial()
+    } else {
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Non connecté"}))
+            return
+        }
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+            servePartial()
+        })
+    }
+}
+
     else {
         res.writeHead(404, {"Content-Type" : "text/plain"})
         res.end("Page non trouvée")

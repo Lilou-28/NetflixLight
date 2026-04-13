@@ -4,9 +4,12 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/login.css">
+    <link rel="stylesheet" href="/static/header.css">
 	<title>NetflixLight</title>
 </head>
 <body>
+	<header id="main-header"></header>
+
 	<main class="hero">
 		<h1>Login</h1>
 		<p>Pages Login</p>
@@ -16,5 +19,13 @@
             <button type="submit">Login</button>
         </form>
 	</main>
+
+	<script type="module">
+		import { initHeader, updateHeaderAuth } from '/static/js/header.js';
+
+		initHeader();
+
+		updateHeaderAuth({ isLoggedIn: false });
+	</script>
 </body>
 </html>

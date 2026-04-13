@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/acceuil.css">
+    <link rel="stylesheet" href="/static/header.css">
+    <title>NetflixLight - Ma liste</title>
+</head>
+<body>
+    <header id="main-header"></header>
+
+    <main>
+        <h2>Ma liste</h2>
+        <div id="favoris-grid" class="favoris-grid"></div>
+        <p id="favoris-empty" hidden>Vous n'avez pas encore de favoris.</p>
+    </main>
+
+    <script src="/static/script/favoris.js"></script>
+    <script type="module">
+        import { initHeader, updateHeaderAuth } from '/static/js/header.js';
+
+        initHeader();
+
+        fetch("/api/userinfo", { method: "GET" })
+        .then((res) => {
+            if (!res.ok) throw new Error("Non connecté");
+            return res.json();
+        })
+        .then((data) => {
+            localStorage.setItem('nl_user', JSON.stringify({ username: data.username }));
+            updateHeaderAuth({ isLoggedIn: true, username: data.username });
+        })
+        .catch(() => {
+            localStorage.removeItem('nl_user');
+            updateHeaderAuth({ isLoggedIn: false });
+            window.location.href = '/login';
+        });
+
+        document.addEventListener('nl:auth:logout', () => {
+            localStorage.removeItem('nl_user');
+            window.location.href = '/logout';
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const grid = document.getElementById("favoris-grid");
+            const empty = document.getElementById("favoris-empty");
+
+            const favoris = await window.getFavoris();
+
+            if (!favoris || favoris.length === 0) {
+                empty.hidden = false;
+                return;
+            }
+
+            for (const favori of favoris) {
+                const card = document.createElement("div");
+                card.className = "favori-card";
+
+                const img = document.createElement("img");
+                img.src = favori.poster_path
+                    ? `https://image.tmdb.org/t/p/w500${favori.poster_path}`
+                    : "https://via.placeholder.com/500x750?text=No+Image";
+                img.alt = favori.title;
+
+                const title = document.createElement("p");
+                title.textContent = favori.title;
+
+                const removeBtn = document.createElement("button");
+                removeBtn.textContent = "✕ Retirer";
+                removeBtn.className = "favori-remove-btn";
+                removeBtn.addEventListener("click", async () => {
+                    await window.removeFavori(favori.media_id);
+                    card.remove();
+                    if (grid.children.length === 0) {
+                        empty.hidden = false;
+                    }
+                });
+
+                card.appendChild(img);
+                card.appendChild(title);
+                card.appendChild(removeBtn);
+
+                card.addEventListener("click", (e) => {
+                    if (e.target === removeBtn) return;
+                    window.location.href = `/details?type=${favori.media_type}&id=${favori.media_id}`;
+                });
+
+                grid.appendChild(card);
+            }
+        });
+    </script>
+</body>
+</html>

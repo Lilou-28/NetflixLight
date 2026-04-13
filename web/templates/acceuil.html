@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../static/acceuil.css">
+    <link rel="stylesheet" href="../static/header.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
     <title>NetflixLight</title>
 </head>
 <body>
+    <header id="main-header"></header>
+
     <div class="search-container">
         <form id="search-form">
             <input 
@@ -52,12 +55,33 @@
     <div class="swiper swiper-movies genre-fantasy-swiper">
 		<div class="swiper-wrapper" id="movie-fantasy-wrapper"></div>
 	</div>
-    <button type="button" id="logout-btn" onclick="window.location.href='/logout'">Logout</button>
-    <button type="button" onclick="window.location.href='/'"><- retour </button>
+
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    <script src="../static/script/heroBanner.js"></script>
-    <script src="../static/script/animationHover.js"></script>
-    <script src="../static/script/carrouselComponent.js"></script>
-    <script src="../static/script/searchbar.js"></script>
+	<script src="/static/script/carrouselComponent.js"></script>
+
+    <script type="module">
+    import { initHeader, updateHeaderAuth } from '/static/js/header.js';
+
+    initHeader();
+
+    fetch("/api/userinfo", { method: "GET" })
+    .then((res) => {
+        if (!res.ok) throw new Error("Non connecté");
+        return res.json();
+    })
+    .then((data) => {
+        localStorage.setItem('nl_user', JSON.stringify({ username: data.username }));
+        updateHeaderAuth({ isLoggedIn: true, username: data.username });
+    })
+    .catch(() => {
+        localStorage.removeItem('nl_user');
+        updateHeaderAuth({ isLoggedIn: false });
+    });
+
+    document.addEventListener('nl:auth:logout', () => {
+        localStorage.removeItem('nl_user');
+        window.location.href = '/logout';
+    });
+</script>
 </body>
 </html>

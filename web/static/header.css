@@ -1,0 +1,65 @@
+:root {
+  --nl-red: #E50914;
+  --nl-header-h: 68px;
+}
+
+#main-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--nl-header-h);
+  z-index: 100;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.85), transparent);
+  transition: background 0.4s ease;
+}
+
+#main-header.nl-header--scrolled { background: #141414; }
+
+.nl-header__inner {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 4%;
+  gap: 32px;
+}
+
+.nl-logo { color: var(--nl-red); font-size: 1.75rem; font-weight: 900; text-decoration: none; }
+
+.nl-nav { display: flex; gap: 20px; }
+.nl-nav__link { color: #e5e5e5; font-size: 0.875rem; text-decoration: none; }
+.nl-nav__link:hover, .nl-nav__link--active { color: #fff; }
+
+.nl-header__right { margin-left: auto; display: flex; align-items: center; gap: 20px; }
+
+.nl-search__toggle { background: none; border: none; color: #fff; cursor: pointer; }
+.nl-search__box {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid rgba(255,255,255,0.6); border-radius: 4px;
+  padding: 4px 10px; background: rgba(0,0,0,0.75);
+}
+.nl-search__input { background: transparent; border: none; outline: none; color: #fff; font-size: 0.875rem; width: 180px; }
+.nl-search__input::placeholder { color: #aaa; }
+
+.nl-avatar {
+  width: 32px; height: 32px; border-radius: 4px;
+  background: var(--nl-red); display: flex; align-items: center;
+  justify-content: center; color: #fff; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+}
+
+.nl-profile { position: relative; }
+.nl-profile__toggle { display: flex; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; color: #fff; }
+
+.nl-dropdown {
+  position: absolute; top: calc(100% + 14px); right: 0;
+  min-width: 190px; background: rgba(0,0,0,0.9);
+  border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 6px 0;
+}
+.nl-dropdown__item { display: block; width: 100%; padding: 8px 16px; color: #e5e5e5; font-size: 0.8125rem; text-decoration: none; background: none; border: none; cursor: pointer; text-align: left; }
+.nl-dropdown__item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+.nl-dropdown__item--danger { color: #e87c7c; }
+.nl-dropdown__sep { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 6px 0; }
+
+.nl-btn { padding: 6px 16px; border-radius: 4px; font-size: 0.875rem; text-decoration: none; }
+.nl-btn--primary { background: var(--nl-red); color: #fff; }
+.nl-btn--ghost { color: #fff; border: 1px solid rgba(255,255,255,0.5); }
+
+body { padding-top: var(--nl-header-h); }

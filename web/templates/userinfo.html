@@ -4,34 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/userinfo.css">
+    <link rel="stylesheet" href="/static/header.css">
     <title>NetflixLight - User Info</title>
 </head>
 <body>
+    <header id="main-header"></header>
+
     <main class="hero">
-        <h1>NetflixLight</h1>
-    <p>Profil connecte:</p>
-    <p>Nom: <strong id="name">...</strong></p>
-    <p>Username: <strong id="username">...</strong></p>
-    <p>Email: <strong id="email">...</strong></p>
-        <button type="button" onclick="window.location.href='/'">Retour accueil</button>
+        <h1>Mon profil</h1>
+        <p>Nom: <strong id="name">...</strong></p>
+        <p>Username: <strong id="username">...</strong></p>
+        <p>Email: <strong id="email">...</strong></p>
     </main>
-    <script>
+
+    <script type="module">
+        import { initHeader, updateHeaderAuth } from '/static/js/header.js';
+
+        initHeader();
+
         fetch("/api/userinfo", { method: "GET" })
         .then((res) => {
-            if (!res.ok) {
-            throw new Error("Session invalide ou non connectee")
-            }
-            return res.json()
+            if (!res.ok) throw new Error("Session invalide ou non connectee");
+            return res.json();
         })
         .then((data) => {
-            document.getElementById("name").textContent = data.name || "-"
-            document.getElementById("username").textContent = data.username || "-"
-            document.getElementById("email").textContent = data.email || "-"
+            document.getElementById("name").textContent = data.name || "-";
+            document.getElementById("username").textContent = data.username || "-";
+            document.getElementById("email").textContent = data.email || "-";
+
+            updateHeaderAuth({ isLoggedIn: true, username: data.username });
+
+            localStorage.setItem('nl_user', JSON.stringify({ username: data.username }));
         })
         .catch((err) => {
-            console.error(err)
-            window.location.href = "/login"
-        })
+            console.error(err);
+            window.location.href = "/login";
+        });
+
+        document.addEventListener('nl:auth:logout', () => {
+            window.location.href = '/logout';
+        });
     </script>
 </body>
 </html>

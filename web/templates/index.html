@@ -1,21 +1,35 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../static/index.css">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
-	<title>NetflixLight</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../static/index.css">
+  <link rel="stylesheet" href="../static/header.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+  <title>NetflixLight</title>
 </head>
 <body>
-	
-	<main class="hero">
-		<h1>NetflixLight</h1>
-		<p>Serveur Node.js actif, page HTML et CSS charges correctement.</p>
-		<button type="button" onclick="window.location.href='/login'">Login</button>
-		<button type="button" onclick="window.location.href='/register'">Register</button>
-		<button type="button" id="logout-btn" onclick="window.location.href='/logout'">Logout</button>
-		<button type="button" onclick="window.location.href='/acceuil'">Acceuil</button>
-	</main>
+
+  <header id="main-header"></header>
+
+  <div id="app"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <script type="module">
+    import { initHeader, updateHeaderAuth } from '../static/js/header.js';
+    import { initRouter } from '../static/js/router.js';
+
+    initHeader();
+
+    const user = JSON.parse(localStorage.getItem('nl_user') || 'null');
+    updateHeaderAuth({ isLoggedIn: !!user, username: user?.username ?? 'U' });
+
+    initRouter();
+
+    document.addEventListener('nl:auth:logout', () => {
+      window.location.href = '/logout';
+    });
+  </script>
+
 </body>
 </html>
