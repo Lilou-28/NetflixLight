@@ -226,19 +226,28 @@ const server = http.createServer((req, res) => {
                 if (isPasswordValid) {
                     const token = generateToken()
                     const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
-                    db.run(`INSERT INTO tokens (user_id, token, expires_at) VALUES (?, ?, ?)`, [row.id, token, expiresAt], (err) => {
-                        if (err) {
-                            console.error("Erreur lors de la création du token :", err)
+                    db.run(`DELETE FROM tokens WHERE user_id = ?`, [row.id], (deleteErr) => {
+                        if (deleteErr) {
+                            console.error("Erreur lors du nettoyage des anciens tokens :", deleteErr)
                             res.writeHead(500, {"Content-Type" : "text/plain"})
                             res.end("Erreur lors de la creation de session")
                             return
                         }
 
-                        res.writeHead(302, {
-                            "Set-Cookie": `session_token=${encodeURIComponent(token)}; Path=/; Max-Age=7200; SameSite=Lax`,
-                            "Location": `/acceuil`
+                        db.run(`INSERT INTO tokens (user_id, token, expires_at) VALUES (?, ?, ?)`, [row.id, token, expiresAt], (insertErr) => {
+                            if (insertErr) {
+                                console.error("Erreur lors de la création du token :", insertErr)
+                                res.writeHead(500, {"Content-Type" : "text/plain"})
+                                res.end("Erreur lors de la creation de session")
+                                return
+                            }
+
+                            res.writeHead(302, {
+                                "Set-Cookie": `session_token=${encodeURIComponent(token)}; Path=/; Max-Age=7200; SameSite=Lax`,
+                                "Location": `/acceuil`
+                            })
+                            res.end()
                         })
-                        res.end()
                     })
                 } else {
                     res.writeHead(401, {"Content-Type" : "text/plain"})
