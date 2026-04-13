@@ -1,5 +1,7 @@
 // router.js — Système de routing SPA (hash-based)
 
+import { showSessionExpiredPopup } from './auth.js'
+
 const routes = {
   '/':            '/api/page/acceuil',
   '/acceuil':     '/api/page/acceuil',
@@ -20,6 +22,11 @@ async function loadPage(path) {
 
   try {
     const res = await fetch(target);
+    if (res.status === 401) {
+      showSessionExpiredPopup('/login');
+      return;
+    }
+
     if (!res.ok) throw new Error(`Page introuvable : ${target}`);
     const html = await res.text();
 

@@ -31,6 +31,7 @@ window.loadCarousel = async function loadCarousel(config) {
     fetchErrorMessage,
     fallbackMediaType = "movie",
     limit = 40,
+    showRating = false,
   } = config;
 
   const wrapper = document.getElementById(wrapperId);
@@ -76,6 +77,13 @@ window.loadCarousel = async function loadCarousel(config) {
       title.className = "slide-title";
       title.textContent = titleText;
 
+      if (showRating && Number.isFinite(item.vote_average)) {
+        const rating = document.createElement("div");
+        rating.className = "slide-rating";
+        rating.textContent = `★ ${item.vote_average.toFixed(1)}`;
+        slide.appendChild(rating);
+      }
+
       window.setupHoverPreview?.(slide, item, mediaType);
 
       slide.appendChild(image);
@@ -117,6 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
       endpoint: "/api/top-rated-mixed",
       fetchErrorMessage: "Impossible de charger les contenus mieux notes",
       emptyErrorMessage: "Aucun contenu mieux note recu depuis l'API",
+      showRating: true,
     },
     {
       wrapperId: "movie-action-wrapper",

@@ -1,19 +1,66 @@
 const http = require('http')
 const fs = require('fs')
 const path = require("path");
-const { randomInt } = require("crypto");
 require("dotenv").config()
 const db = require("../internal/database")
-const { generateToken, checkToken, getSessionTokenFromCookie } = require("../internal/token");
+const { generateToken, checkToken, getSessionTokenFromCookie, cleanupExpiredTokens } = require("../internal/token");
 const { hashPassword, verifyPassword } = require('../internal/hashmdp');
-const { getMovies, getSeries, getTopRatedMovies, getTopRatedSeries, getMoviesAction, getMoviesFantasy, getSeriesActionAdventure, getSeriesSciFiFantasy, searchmovie, getTrendingAllWeek, getSimilar } = require('../internal/appelAPI')
+const { getMovies, getSeries, getTopRatedMovies, getTopRatedSeries, getMoviesAction, getMoviesFantasy, getMoviesThriller, getSeriesActionAdventure, getSeriesSciFiFantasy, getSeriesDrama, searchmovie, getTrendingAllWeek, getSimilar } = require('../internal/appelAPI')
 const { shuffleArray } = require("../internal/arrayUtils")
 const { escapeHtml } = require("../internal/htmlUtils")
-const { getYoutubeTrailer, getLocalizedDetails } = require("../internal/tmdbUtils")
+const { getYoutubeTrailer, getLocalizedDetails, getRandomCarouselPage } = require("../internal/tmdbUtils")
 
 const host = 'localhost'
 const port = 8080
 const tmdbBearerToken = process.env.TMDB_BEARER_TOKEN || ""
+const isSecureCookie = process.env.NODE_ENV === "production"
+
+function getSessionCookie(token, maxAgeSeconds = 7200) {
+    return [
+        `session_token=${encodeURIComponent(token)}`,
+        "Path=/",
+        `Max-Age=${maxAgeSeconds}`,
+        "SameSite=Lax",
+        "HttpOnly",
+        isSecureCookie ? "Secure" : "",
+    ].filter(Boolean).join("; ")
+}
+
+function getExpiredSessionCookie() {
+    return [
+        "session_token=",
+        "Path=/",
+        "Max-Age=0",
+        "SameSite=Lax",
+        "HttpOnly",
+        isSecureCookie ? "Secure" : "",
+    ].filter(Boolean).join("; ")
+}
+
+function formatLocalDateTime(date) {
+    const pad = (value) => String(value).padStart(2, "0")
+    return [
+        date.getFullYear(),
+        pad(date.getMonth() + 1),
+        pad(date.getDate()),
+    ].join("-") + ` ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
+function clearSessionAndRedirectToLogin(res) {
+    res.writeHead(302, {
+        "Set-Cookie": getExpiredSessionCookie(),
+        "Location": "/login?session_expired=1",
+    })
+    res.end()
+}
+
+function clearSessionAndSendUnauthorized(res, message = "Session invalide") {
+    res.writeHead(401, {
+        "Content-Type": "application/json",
+        "Set-Cookie": getExpiredSessionCookie(),
+    })
+    res.end(JSON.stringify({ error: message }))
+}
 
 const mimeTypes = {
     ".css": "text/css",
@@ -30,12 +77,21 @@ const mimeTypes = {
 const server = http.createServer((req, res) => {
     if (req.url === "/") {
     const sessionToken = getSessionTokenFromCookie(req);
-    if (sessionToken) {
-        res.writeHead(302, { "Location": "/acceuil" });
-    } else {
+    if (!sessionToken) {
         res.writeHead(302, { "Location": "/login" });
+        res.end();
+        return;
     }
-    res.end();
+
+    checkToken(sessionToken, (isValid) => {
+        if (!isValid) {
+            clearSessionAndRedirectToLogin(res)
+            return;
+        }
+
+        res.writeHead(302, { "Location": "/acceuil" });
+        res.end();
+    });
     }
     else if (req.url.startsWith("/details")) {
         const sessionToken = getSessionTokenFromCookie(req);
@@ -47,8 +103,7 @@ const server = http.createServer((req, res) => {
 
         checkToken(sessionToken, (isValid) => {
             if (!isValid) {
-                res.writeHead(302, { "Location": "/login" });
-                res.end();
+                clearSessionAndRedirectToLogin(res)
                 return;
             }
 
@@ -186,7 +241,7 @@ const server = http.createServer((req, res) => {
         });
     }
     
-    else if (req.method === "GET" && req.url === "/login"){
+    else if (req.method === "GET" && req.url.startsWith("/login")){
         fs.readFile(path.join(__dirname, "../web/templates/login.html"), (err,data) => {
             res.writeHead(200, {"Content-Type" :  "text/html"})
             res.end(data)
@@ -228,29 +283,31 @@ const server = http.createServer((req, res) => {
 
                 if (isPasswordValid) {
                     const token = generateToken()
-                    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
-                    db.run(`DELETE FROM tokens WHERE user_id = ?`, [row.id], (deleteErr) => {
-                        if (deleteErr) {
-                            console.error("Erreur lors du nettoyage des anciens tokens :", deleteErr)
-                            res.writeHead(500, {"Content-Type" : "text/plain"})
-                            res.end("Erreur lors de la creation de session")
-                            return
-                        }
+                    const sessionLifetimeMs = 2 * 60 * 60 * 1000
+                    const expiresAt = formatLocalDateTime(new Date(Date.now() + sessionLifetimeMs))
+                    cleanupExpiredTokens(() => {
+                        db.run(
+                            `INSERT INTO tokens (user_id, token, expires_at)
+                             VALUES (?, ?, ?)
+                             ON CONFLICT(user_id) DO UPDATE SET
+                                token = excluded.token,
+                                expires_at = excluded.expires_at`,
+                            [row.id, token, expiresAt],
+                            (insertErr) => {
+                                if (insertErr) {
+                                    console.error("Erreur lors de la création du token :", insertErr)
+                                    res.writeHead(500, {"Content-Type" : "text/plain"})
+                                    res.end("Erreur lors de la creation de session")
+                                    return
+                                }
 
-                        db.run(`INSERT INTO tokens (user_id, token, expires_at) VALUES (?, ?, ?)`, [row.id, token, expiresAt], (insertErr) => {
-                            if (insertErr) {
-                                console.error("Erreur lors de la création du token :", insertErr)
-                                res.writeHead(500, {"Content-Type" : "text/plain"})
-                                res.end("Erreur lors de la creation de session")
-                                return
+                                res.writeHead(302, {
+                                    "Set-Cookie": getSessionCookie(token, 7200),
+                                    "Location": `/acceuil`
+                                })
+                                res.end()
                             }
-
-                            res.writeHead(302, {
-                                "Set-Cookie": `session_token=${encodeURIComponent(token)}; Path=/; Max-Age=7200; SameSite=Lax`,
-                                "Location": `/acceuil`
-                            })
-                            res.end()
-                        })
+                        )
                     })
                 } else {
                     res.writeHead(401, {"Content-Type" : "text/plain"})
@@ -275,8 +332,7 @@ const server = http.createServer((req, res) => {
 
         checkToken(sessionToken, (isValid) => {
             if (!isValid) {
-                res.writeHead(302, {"Location": "/login"})
-                res.end()
+                clearSessionAndRedirectToLogin(res)
                 return
             }
 
@@ -333,10 +389,8 @@ const server = http.createServer((req, res) => {
                     return
                 }
 
-                fs.readFile(path.join(__dirname, "../web/templates/index.html"), (err,data) => {
-                res.writeHead(200, {"Content-Type" :  "text/html"})
-                res.end(data)
-                })
+                res.writeHead(302, {"Location": "/login"})
+                res.end()
             })
         })
     }
@@ -403,26 +457,30 @@ const server = http.createServer((req, res) => {
     else if (req.url === "/api/userinfo" && req.method === "GET") {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
-            res.writeHead(401, {"Content-Type": "application/json"})
+            res.writeHead(401, {"Content-Type": "application/json", "Cache-Control": "no-store"})
             res.end(JSON.stringify({error: "Session manquante"}))
             return
         }
 
         checkToken(sessionToken, (isValid, userId) => {
             if (!isValid || !userId) {
-                res.writeHead(401, {"Content-Type": "application/json"})
+                res.writeHead(401, {
+                    "Content-Type": "application/json",
+                    "Cache-Control": "no-store",
+                    "Set-Cookie": getExpiredSessionCookie(),
+                })
                 res.end(JSON.stringify({error: "Session invalide"}))
                 return
             }
 
             db.get("SELECT username, email, name FROM users WHERE id = ?", [userId], (err, userRow) => {
                 if (err || !userRow) {
-                    res.writeHead(404, {"Content-Type": "application/json"})
+                    res.writeHead(404, {"Content-Type": "application/json", "Cache-Control": "no-store"})
                     res.end(JSON.stringify({error: "Utilisateur introuvable"}))
                     return
                 }
 
-                res.writeHead(200, {"Content-Type": "application/json"})
+                res.writeHead(200, {"Content-Type": "application/json", "Cache-Control": "no-store"})
                 res.end(JSON.stringify({
                     username: userRow.username,
                     email: userRow.email,
@@ -452,10 +510,9 @@ const server = http.createServer((req, res) => {
                 return
             }
 
-            const page = randomInt(1, 501)
             Promise.all([
-                getMovies(tmdbBearerToken, page),
-                getSeries(tmdbBearerToken, page),
+                getRandomCarouselPage(getMovies, tmdbBearerToken, 500),
+                getRandomCarouselPage(getSeries, tmdbBearerToken, 500),
             ])
                 .then(([moviesData, seriesData]) => {
                     const movies = Array.isArray(moviesData.results)
@@ -497,8 +554,7 @@ const server = http.createServer((req, res) => {
                 return
             }
 
-            const page = randomInt(1, 501)
-            getMovies(tmdbBearerToken, page)
+            getRandomCarouselPage(getMovies, tmdbBearerToken, 500)
                 .then((data) => {
                     const results = Array.isArray(data.results)
                         ? data.results.map((item) => ({ ...item, media_type: "movie" }))
@@ -534,8 +590,7 @@ const server = http.createServer((req, res) => {
                 return
             }
 
-            const page = randomInt(1, 501)
-            getSeries(tmdbBearerToken, page)
+            getRandomCarouselPage(getSeries, tmdbBearerToken, 500)
                 .then((data) => {
                     const results = Array.isArray(data.results)
                         ? data.results.map((item) => ({ ...item, media_type: "tv" }))
@@ -571,8 +626,7 @@ const server = http.createServer((req, res) => {
                 return
             }
 
-            const page = randomInt(1, 501)
-            getTrendingAllWeek(tmdbBearerToken, page)
+            getRandomCarouselPage(getTrendingAllWeek, tmdbBearerToken, 500)
                 .then((data) => {
                     const items = Array.isArray(data.results)
                         ? data.results.filter((item) => item && (item.media_type === "movie" || item.media_type === "tv"))
@@ -609,10 +663,9 @@ const server = http.createServer((req, res) => {
                 return
             }
 
-            const page = randomInt(1, 143)
             Promise.all([
-                getTopRatedMovies(tmdbBearerToken, page),
-                getTopRatedSeries(tmdbBearerToken, page),
+                getRandomCarouselPage(getTopRatedMovies, tmdbBearerToken, 143),
+                getRandomCarouselPage(getTopRatedSeries, tmdbBearerToken, 143),
             ])
                 .then(([moviesData, seriesData]) => {
                     const movies = Array.isArray(moviesData.results)
@@ -654,8 +707,7 @@ const server = http.createServer((req, res) => {
                 return
             }
 
-            const page = randomInt(1, 143)
-            getTopRatedMovies(tmdbBearerToken, page)
+            getRandomCarouselPage(getTopRatedMovies, tmdbBearerToken, 143)
                 .then((data) => {
                     const results = Array.isArray(data.results)
                         ? data.results.map((item) => ({ ...item, media_type: "movie" }))
@@ -691,8 +743,7 @@ const server = http.createServer((req, res) => {
                 return
             }
 
-            const page = randomInt(1, 143)
-            getTopRatedSeries(tmdbBearerToken, page)
+            getRandomCarouselPage(getTopRatedSeries, tmdbBearerToken, 143)
                 .then((data) => {
                     const results = Array.isArray(data.results)
                         ? data.results.map((item) => ({ ...item, media_type: "tv" }))
@@ -775,10 +826,9 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
                 return
             }
-            let page = randomInt(1, 500)
             Promise.all([
-                getMoviesAction(tmdbBearerToken, page),
-                getSeriesActionAdventure(tmdbBearerToken, page),
+                getRandomCarouselPage(getMoviesAction, tmdbBearerToken, 500),
+                getRandomCarouselPage(getSeriesActionAdventure, tmdbBearerToken, 500),
             ])
             .then(([moviesData, seriesData]) => {
                 const movies = Array.isArray(moviesData.results)
@@ -817,8 +867,7 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
                 return
             }
-            const page = randomInt(1, 500)
-            getMoviesAction(tmdbBearerToken, page)
+            getRandomCarouselPage(getMoviesAction, tmdbBearerToken, 500)
                 .then((data) => {
                     const results = Array.isArray(data.results)
                         ? data.results.map((item) => ({ ...item, media_type: "movie" }))
@@ -853,10 +902,9 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
                 return
             }
-            let page = randomInt(1, 500)
             Promise.all([
-                getMoviesFantasy(tmdbBearerToken, page),
-                getSeriesSciFiFantasy(tmdbBearerToken, page),
+                getRandomCarouselPage(getMoviesFantasy, tmdbBearerToken, 500),
+                getRandomCarouselPage(getSeriesSciFiFantasy, tmdbBearerToken, 500),
             ])
             .then(([moviesData, seriesData]) => {
                 const movies = Array.isArray(moviesData.results)
@@ -895,8 +943,7 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
                 return
             }
-            const page = randomInt(1, 500)
-            getMoviesFantasy(tmdbBearerToken, page)
+            getRandomCarouselPage(getMoviesFantasy, tmdbBearerToken, 500)
                 .then((data) => {
                     const results = Array.isArray(data.results)
                         ? data.results.map((item) => ({ ...item, media_type: "movie" }))
@@ -912,12 +959,160 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
-    else if (req.url === "/logout") {
-        res.writeHead(302, {
-            "Set-Cookie": `session_token=; Path=/; Max-Age=0; SameSite=Lax`,
-            "Location": "/"
+    else if (req.url === "/discover/movie-thriller-only" && req.method === "GET"){
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Session manquante"}))
+            return
+        }
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+            if (!tmdbBearerToken) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
+                return
+            }
+            getRandomCarouselPage(getMoviesThriller, tmdbBearerToken, 500)
+                .then((data) => {
+                    const results = Array.isArray(data.results)
+                        ? data.results.map((item) => ({ ...item, media_type: "movie" }))
+                        : []
+
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({ results }))
+                })
+                .catch((error) => {
+                    console.error("Erreur TMDB:", error.message)
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur lors de la récupération des films thriller"}))
+                })
         })
-        res.end()
+    }
+    else if (req.url === "/discover/series-action-only" && req.method === "GET"){
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Session manquante"}))
+            return
+        }
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+            if (!tmdbBearerToken) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
+                return
+            }
+            getRandomCarouselPage(getSeriesActionAdventure, tmdbBearerToken, 500)
+                .then((data) => {
+                    const results = Array.isArray(data.results)
+                        ? data.results.map((item) => ({ ...item, media_type: "tv" }))
+                        : []
+
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({ results }))
+                })
+                .catch((error) => {
+                    console.error("Erreur TMDB:", error.message)
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur lors de la récupération des séries d'action"}))
+                })
+        })
+    }
+    else if (req.url === "/discover/series-sci-fi-only" && req.method === "GET"){
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Session manquante"}))
+            return
+        }
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+            if (!tmdbBearerToken) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
+                return
+            }
+            getRandomCarouselPage(getSeriesSciFiFantasy, tmdbBearerToken, 500)
+                .then((data) => {
+                    const results = Array.isArray(data.results)
+                        ? data.results.map((item) => ({ ...item, media_type: "tv" }))
+                        : []
+
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({ results }))
+                })
+                .catch((error) => {
+                    console.error("Erreur TMDB:", error.message)
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur lors de la récupération des séries science-fiction et fantasy"}))
+                })
+        })
+    }
+    else if (req.url === "/discover/series-drama-only" && req.method === "GET"){
+        const sessionToken = getSessionTokenFromCookie(req)
+        if (!sessionToken) {
+            res.writeHead(401, {"Content-Type": "application/json"})
+            res.end(JSON.stringify({error: "Session manquante"}))
+            return
+        }
+        checkToken(sessionToken, (isValid) => {
+            if (!isValid) {
+                res.writeHead(401, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "Session invalide"}))
+                return
+            }
+            if (!tmdbBearerToken) {
+                res.writeHead(500, {"Content-Type": "application/json"})
+                res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
+                return
+            }
+            getRandomCarouselPage(getSeriesDrama, tmdbBearerToken, 500)
+                .then((data) => {
+                    const results = Array.isArray(data.results)
+                        ? data.results.map((item) => ({ ...item, media_type: "tv" }))
+                        : []
+
+                    res.writeHead(200, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({ results }))
+                })
+                .catch((error) => {
+                    console.error("Erreur TMDB:", error.message)
+                    res.writeHead(500, {"Content-Type": "application/json"})
+                    res.end(JSON.stringify({error: "Erreur lors de la récupération des séries dramatiques"}))
+                })
+        })
+    }
+    else if (req.url === "/logout") {
+        const sessionToken = getSessionTokenFromCookie(req)
+        const finalizeLogout = () => {
+            res.writeHead(302, {
+                "Set-Cookie": getExpiredSessionCookie(),
+                "Location": "/"
+            })
+            res.end()
+        }
+
+        if (!sessionToken) {
+            finalizeLogout()
+            return
+        }
+
+        db.run("DELETE FROM tokens WHERE token = ?", [sessionToken], () => {
+            finalizeLogout()
+        })
     }
     else if (req.url === "/acceuil") {
         const sessionToken = getSessionTokenFromCookie(req)
@@ -929,8 +1124,7 @@ const server = http.createServer((req, res) => {
 
         checkToken(sessionToken, (isValid) => {
             if (!isValid) {
-                res.writeHead(302, {"Location": "/login"})
-                res.end()
+                clearSessionAndRedirectToLogin(res)
                 return
             }
 
@@ -955,8 +1149,7 @@ const server = http.createServer((req, res) => {
         }
         checkToken(sessionToken, (isValid) => {
             if (!isValid) {
-                res.writeHead(302, { "Location": "/login" });
-                res.end();
+                clearSessionAndRedirectToLogin(res)
                 return;
             }
             fs.readFile(path.join(__dirname, "../web/templates/series.html"), (err, data) => {
@@ -974,8 +1167,7 @@ const server = http.createServer((req, res) => {
         }
         checkToken(sessionToken, (isValid) => {
             if (!isValid) {
-                res.writeHead(302, { "Location": "/login" });
-                res.end();
+                clearSessionAndRedirectToLogin(res)
                 return;
             }
             fs.readFile(path.join(__dirname, "../web/templates/films.html"), (err, data) => {
@@ -994,8 +1186,7 @@ const server = http.createServer((req, res) => {
     }
     checkToken(sessionToken, (isValid) => {
         if (!isValid) {
-            res.writeHead(302, { "Location": "/login" });
-            res.end();
+            clearSessionAndRedirectToLogin(res)
             return;
         }
         fs.readFile(path.join(__dirname, "../web/templates/ma-liste.html"), (err, data) => {
@@ -1174,8 +1365,7 @@ else if (req.url.startsWith("/api/favoris/") && req.method === "DELETE") {
         }
         checkToken(sessionToken, (isValid) => {
             if (!isValid) {
-                res.writeHead(401, {"Content-Type": "application/json"})
-                res.end(JSON.stringify({error: "Session invalide"}))
+                clearSessionAndSendUnauthorized(res)
                 return
             }
             servePartial()

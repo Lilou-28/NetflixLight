@@ -21,11 +21,15 @@
 	</main>
 
 	<script type="module">
-		import { initHeader, updateHeaderAuth } from '/static/js/header.js';
+		import { initHeader } from '/static/js/header.js';
+		import { showSessionExpiredPopup } from '/static/js/auth.js';
 
 		initHeader();
 
-		updateHeaderAuth({ isLoggedIn: false });
+		const params = new URLSearchParams(window.location.search);
+		if (params.get('session_expired') === '1') {
+			showSessionExpiredPopup('/login');
+		}
 	</script>
 </body>
 </html>

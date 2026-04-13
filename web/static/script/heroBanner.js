@@ -18,6 +18,47 @@ function pickMovie(results) {
   return results.find((movie) => movie && movie.id) || null;
 }
 
+function getDisplayTitle(movie) {
+  return movie?.title || movie?.name || movie?.original_title || movie?.original_name || "Titre inconnu";
+}
+
+function getDisplayOverview(movie) {
+  return movie?.overview || "Pas de description disponible.";
+}
+
+function hasMissingHeroInfo(movie) {
+  const title = movie?.title || movie?.name || movie?.original_title || movie?.original_name;
+  return !title || !movie?.overview;
+}
+
+async function enrichHeroMovie(movie) {
+  if (!movie || !movie.id) return movie;
+  if (!hasMissingHeroInfo(movie)) return movie;
+
+  const type = movie.media_type === "tv" ? "tv" : "movie";
+
+  try {
+    const response = await fetch(`/api/tmdb/details?id=${encodeURIComponent(movie.id)}&type=${encodeURIComponent(type)}`, {
+      credentials: "same-origin",
+    });
+
+    if (!response.ok) return movie;
+    const details = await response.json();
+
+    return {
+      ...movie,
+      title: movie.title || details.title,
+      name: movie.name || details.name,
+      original_title: movie.original_title || details.original_title,
+      original_name: movie.original_name || details.original_name,
+      overview: movie.overview || details.overview,
+      backdrop_path: movie.backdrop_path || details.backdrop_path,
+    };
+  } catch (_error) {
+    return movie;
+  }
+}
+
 async function getHeroMovie() {
   try {
     const response = await fetch("/api/trending-mixed", { credentials: "same-origin" });
@@ -29,7 +70,8 @@ async function getHeroMovie() {
     if (!results.length) {
       return null;
     }
-    return pickMovie(results);
+    const pickedMovie = pickMovie(results);
+    return enrichHeroMovie(pickedMovie);
   } catch (_err) {
     return null;
   }
@@ -46,8 +88,8 @@ function renderHero(movie) {
     return;
   }
 
-  const title = movie.title || movie.original_title || "Titre inconnu";
-  const overview = movie.overview || "Pas de description disponible.";
+  const title = getDisplayTitle(movie);
+  const overview = getDisplayOverview(movie);
 
   heroMovieId = movie.id;
   heroMediaType = movie.media_type === "tv" ? "tv" : "movie";

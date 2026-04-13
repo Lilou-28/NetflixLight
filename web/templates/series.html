@@ -21,31 +21,37 @@
         <div class="swiper-wrapper" id="top-rated-series-wrapper"></div>
     </div>
 
+    <h3>Séries d'action et d'aventure</h3>
+    <div class="swiper swiper-series series-action-swiper">
+        <div class="swiper-wrapper" id="series-action-wrapper"></div>
+    </div>
+
+    <h3>Séries science-fiction et fantasy</h3>
+    <div class="swiper swiper-series series-sci-fi-swiper">
+        <div class="swiper-wrapper" id="series-sci-fi-wrapper"></div>
+    </div>
+
+    <h3>Séries dramatiques</h3>
+    <div class="swiper swiper-series series-drama-swiper">
+        <div class="swiper-wrapper" id="series-drama-wrapper"></div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="/static/script/animationHover.js"></script>
     <script src="/static/script/carrouselComponent.js"></script>
 
     <script type="module">
         import { initHeader, updateHeaderAuth } from '/static/js/header.js';
+        import { startAuthSessionMonitor } from '/static/js/auth.js';
 
         initHeader();
 
-        fetch("/api/userinfo", { method: "GET" })
-        .then((res) => {
-            if (!res.ok) throw new Error("Non connecté");
-            return res.json();
-        })
-        .then((data) => {
-            localStorage.setItem('nl_user', JSON.stringify({ username: data.username }));
-            updateHeaderAuth({ isLoggedIn: true, username: data.username });
-        })
-        .catch(() => {
-            localStorage.removeItem('nl_user');
-            updateHeaderAuth({ isLoggedIn: false });
+        startAuthSessionMonitor({
+            updateHeaderAuth,
+            redirectToLogin: true,
         });
 
         document.addEventListener('nl:auth:logout', () => {
-            localStorage.removeItem('nl_user');
             window.location.href = '/logout';
         });
     </script>
@@ -53,23 +59,51 @@
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             window.loadCarousel({
-        wrapperId: "series-wrapper",
-        swiperSelector: ".series-swiper",
-        endpoint: "/api/popular-series",
-        fetchErrorMessage: "Impossible de charger les séries",
-        emptyErrorMessage: "Aucune série reçue",
-        fallbackMediaType: "tv"
-    });
+                wrapperId: "series-wrapper",
+                swiperSelector: ".series-swiper",
+                endpoint: "/api/popular-series",
+                fetchErrorMessage: "Impossible de charger les séries",
+                emptyErrorMessage: "Aucune série reçue",
+                fallbackMediaType: "tv"
+            });
 
-    window.loadCarousel({
-        wrapperId: "top-rated-series-wrapper",
-        swiperSelector: ".top-rated-series-swiper",
-        endpoint: "/api/top-rated-series",
-        fetchErrorMessage: "Impossible de charger les séries mieux notées",
-        emptyErrorMessage: "Aucune série mieux notée reçue",
-        fallbackMediaType: "tv"
-    });
-});
+            window.loadCarousel({
+                wrapperId: "top-rated-series-wrapper",
+                swiperSelector: ".top-rated-series-swiper",
+                endpoint: "/api/top-rated-series",
+                fetchErrorMessage: "Impossible de charger les séries mieux notées",
+                emptyErrorMessage: "Aucune série mieux notée reçue",
+                fallbackMediaType: "tv",
+                showRating: true
+            });
+
+            window.loadCarousel({
+                wrapperId: "series-action-wrapper",
+                swiperSelector: ".series-action-swiper",
+                endpoint: "/discover/series-action-only",
+                fetchErrorMessage: "Impossible de charger les séries d'action",
+                emptyErrorMessage: "Aucune série d'action reçue",
+                fallbackMediaType: "tv"
+            });
+
+            window.loadCarousel({
+                wrapperId: "series-sci-fi-wrapper",
+                swiperSelector: ".series-sci-fi-swiper",
+                endpoint: "/discover/series-sci-fi-only",
+                fetchErrorMessage: "Impossible de charger les séries science-fiction",
+                emptyErrorMessage: "Aucune série science-fiction reçue",
+                fallbackMediaType: "tv"
+            });
+
+            window.loadCarousel({
+                wrapperId: "series-drama-wrapper",
+                swiperSelector: ".series-drama-swiper",
+                endpoint: "/discover/series-drama-only",
+                fetchErrorMessage: "Impossible de charger les séries dramatiques",
+                emptyErrorMessage: "Aucune série dramatique reçue",
+                fallbackMediaType: "tv"
+            });
+        });
     </script>
 </body>
 </html>

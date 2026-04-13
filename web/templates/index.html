@@ -17,12 +17,15 @@
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
   <script type="module">
     import { initHeader, updateHeaderAuth } from '../static/js/header.js';
+    import { startAuthSessionMonitor } from '../static/js/auth.js';
     import { initRouter } from '../static/js/router.js';
 
     initHeader();
 
-    const user = JSON.parse(localStorage.getItem('nl_user') || 'null');
-    updateHeaderAuth({ isLoggedIn: !!user, username: user?.username ?? 'U' });
+    startAuthSessionMonitor({
+      updateHeaderAuth,
+      redirectToLogin: true,
+    });
 
     initRouter();
 

@@ -191,6 +191,22 @@ body {
 	z-index: 1;
 }
 
+.slide-rating {
+	position: absolute;
+	top: 0.45rem;
+	left: 0.45rem;
+	z-index: 3;
+	padding: 0.25rem 0.5rem;
+	border-radius: 999px;
+	font-size: 0.74rem;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	color: #fff;
+	background: rgba(0, 0, 0, 0.72);
+	border: 1px solid rgba(255, 255, 255, 0.22);
+	backdrop-filter: blur(2px);
+}
+
 h3 {
 	width: min(1100px, calc(100% - 40rem));
 	margin: 0.75rem auto;

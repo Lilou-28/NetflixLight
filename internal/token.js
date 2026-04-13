@@ -1,33 +1,69 @@
 const crypto = require("crypto")
 const db = require("./database"); 
 
-db.run(`
-    CREATE TABLE IF NOT EXISTS tokens (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    token TEXT,
-    expires_at DATETIME
-    );
-`)
-
 function generateToken() {
     return crypto.randomBytes(32).toString("hex")
 }
 
+function parseExpirationValue(expiresAt) {
+    const numericValue = Number(expiresAt)
+    if (Number.isFinite(numericValue)) {
+        return numericValue
+    }
+
+    const parsedDate = Date.parse(expiresAt)
+    return Number.isFinite(parsedDate) ? parsedDate : NaN
+}
+
+function cleanupExpiredTokens(callback) {
+    db.all("SELECT id, expires_at FROM tokens", [], (err, rows) => {
+        if (err) {
+            if (typeof callback === "function") {
+                callback()
+            }
+            return
+        }
+
+        const now = Date.now()
+        const expiredIds = Array.isArray(rows)
+            ? rows
+                .filter((row) => !Number.isFinite(parseExpirationValue(row.expires_at)) || parseExpirationValue(row.expires_at) <= now)
+                .map((row) => row.id)
+            : []
+
+        if (!expiredIds.length) {
+            if (typeof callback === "function") {
+                callback()
+            }
+            return
+        }
+
+        const placeholders = expiredIds.map(() => "?").join(", ")
+        db.run(`DELETE FROM tokens WHERE id IN (${placeholders})`, expiredIds, () => {
+            if (typeof callback === "function") {
+                callback()
+            }
+        })
+    })
+}
+
 function checkToken(token, callback) {
-    db.get("SELECT user_id, expires_at FROM tokens WHERE token = ? ORDER BY id DESC LIMIT 1", [token], (err, row) => {
-        if (err || !row) {
-            callback(false)
-            return
-        }
+    cleanupExpiredTokens(() => {
+        db.get("SELECT user_id, expires_at FROM tokens WHERE token = ? ORDER BY id DESC LIMIT 1", [token], (err, row) => {
+            if (err || !row) {
+                callback(false)
+                return
+            }
 
-        const expiresAt = new Date(row.expires_at).getTime()
-        if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
-            callback(false)
-            return
-        }
+            const expiresAt = parseExpirationValue(row.expires_at)
+            if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+                db.run("DELETE FROM tokens WHERE token = ?", [token])
+                callback(false)
+                return
+            }
 
-        callback(true, row.user_id)
+            callback(true, row.user_id)
+        })
     })
 }
 
@@ -38,7 +74,11 @@ function getSessionTokenFromCookie(req) {
     for (const cookie of cookies) {
         const trimmed = cookie.trim()
         if (trimmed.startsWith("session_token=")) {
-            return decodeURIComponent(trimmed.slice("session_token=".length))
+            try {
+                return decodeURIComponent(trimmed.slice("session_token=".length))
+            } catch (_err) {
+                return null
+            }
         }
     }
 
@@ -48,5 +88,6 @@ function getSessionTokenFromCookie(req) {
 module.exports = {
     generateToken,
     checkToken,
-    getSessionTokenFromCookie
+    getSessionTokenFromCookie,
+    cleanupExpiredTokens,
 }

@@ -1,4 +1,31 @@
+const { randomInt } = require("crypto")
 const { getMovieDetails, getTvDetails, getPersonDetails } = require("./appelAPI")
+
+async function getRandomCarouselPage(fetchPage, credential, maxPage = 500) {
+    const firstPage = await fetchPage(credential, 1)
+    const totalPages = Number.isFinite(firstPage.total_pages) ? firstPage.total_pages : 1
+    const safeMaxPage = Math.max(1, Math.min(maxPage, totalPages))
+
+    if (safeMaxPage === 1) {
+        return firstPage
+    }
+
+    const page = randomInt(1, safeMaxPage + 1)
+    if (page === 1) {
+        return firstPage
+    }
+
+    try {
+        const selectedPage = await fetchPage(credential, page)
+        if (Array.isArray(selectedPage.results) && selectedPage.results.length > 0) {
+            return selectedPage
+        }
+    } catch (_error) {
+        return firstPage
+    }
+
+    return firstPage
+}
 
 function getYoutubeTrailer(videos) {
     const videoResults = Array.isArray(videos && videos.results) ? videos.results : []
@@ -109,8 +136,9 @@ async function getLocalizedDetails(contentType, id, credential, preferredLanguag
     languagesTried.push(primaryLanguage)
 
     const originalLanguage = normalizeLanguage(details.original_language)
-    languageSet.add(originalLanguage)
+    // Prioritize English fallback before original language when FR fields are missing.
     languageSet.add("en-US")
+    languageSet.add(originalLanguage)
 
     for (const language of languageSet) {
         if (languagesTried.includes(language)) continue
@@ -131,4 +159,5 @@ async function getLocalizedDetails(contentType, id, credential, preferredLanguag
 module.exports = {
     getYoutubeTrailer,
     getLocalizedDetails,
+    getRandomCarouselPage,
 }

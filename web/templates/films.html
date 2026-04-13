@@ -31,31 +31,27 @@
         <div class="swiper-wrapper" id="movie-fantasy-wrapper"></div>
     </div>
 
+    <h3>Films à suspense</h3>
+    <div class="swiper swiper-movies thriller-swiper">
+        <div class="swiper-wrapper" id="movie-thriller-wrapper"></div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="/static/script/animationHover.js"></script>
     <script src="/static/script/carrouselComponent.js"></script>
 
     <script type="module">
         import { initHeader, updateHeaderAuth } from '/static/js/header.js';
+        import { startAuthSessionMonitor } from '/static/js/auth.js';
 
         initHeader();
 
-        fetch("/api/userinfo", { method: "GET" })
-        .then((res) => {
-            if (!res.ok) throw new Error("Non connecté");
-            return res.json();
-        })
-        .then((data) => {
-            localStorage.setItem('nl_user', JSON.stringify({ username: data.username }));
-            updateHeaderAuth({ isLoggedIn: true, username: data.username });
-        })
-        .catch(() => {
-            localStorage.removeItem('nl_user');
-            updateHeaderAuth({ isLoggedIn: false });
+        startAuthSessionMonitor({
+            updateHeaderAuth,
+            redirectToLogin: true,
         });
 
         document.addEventListener('nl:auth:logout', () => {
-            localStorage.removeItem('nl_user');
             window.location.href = '/logout';
         });
     </script>
@@ -77,7 +73,8 @@
                 endpoint: "/api/top-rated-movies",
                 fetchErrorMessage: "Impossible de charger les films mieux notés",
                 emptyErrorMessage: "Aucun film mieux noté reçu",
-                fallbackMediaType: "movie"
+                fallbackMediaType: "movie",
+                showRating: true
             });
 
             window.loadCarousel({
@@ -95,6 +92,15 @@
                 endpoint: "/discover/movie-fantasy-only",
                 fetchErrorMessage: "Impossible de charger les films fantasy",
                 emptyErrorMessage: "Aucun film fantasy reçu",
+                fallbackMediaType: "movie"
+            });
+
+            window.loadCarousel({
+                wrapperId: "movie-thriller-wrapper",
+                swiperSelector: ".thriller-swiper",
+                endpoint: "/discover/movie-thriller-only",
+                fetchErrorMessage: "Impossible de charger les films à suspense",
+                emptyErrorMessage: "Aucun film à suspense reçu",
                 fallbackMediaType: "movie"
             });
         });

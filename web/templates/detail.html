@@ -14,27 +14,29 @@
     <main class="hero">
         <img src="{{backdrop_path}}" alt="Banner du film" />
         <h1>{{title}}</h1>
-        <img src="{{poster}}" alt="Affiche du film" />
+        <div class="hero-actions">
+            <button id="favori-btn" class="favori-btn">♡ Ajouter aux favoris</button>
+        </div>
+        <img class="detail-poster" src="{{poster}}" alt="Affiche du film" />
         <p>{{overview}}</p>
         <p>Genres : {{genres}}</p>
         <p>Date de sortie : {{release_date}}</p>
         <p>Note : {{vote_average}} ({{vote_count}} avis)</p>
         <p>{{runtime_label}} : {{runtime}}</p>
         <p>Casting : {{cast}}</p>
+        
+        <section class="cast-section" aria-labelledby="cast-title">
+            <h2 id="cast-title">Acteurs</h2>
+                <div class="cast-grid">
+                    {{cast_cards}}
+                </div>
+        </section>
 
         <section class="trailer-section" aria-labelledby="trailer-title">
             <h2 id="trailer-title">Bande d'annonce</h2>
             {{trailer_block}}
         </section>
 
-        <button id="favori-btn" class="favori-btn">♡ Ajouter aux favoris</button>
-
-        <section class="cast-section" aria-labelledby="cast-title">
-            <h2 id="cast-title">Acteurs</h2>
-            <div class="cast-grid">
-                {{cast_cards}}
-            </div>
-        </section>
         <h3>Films similaires</h3>
         <div class="swiper swiper-movies similar-swiper">
             <div class="swiper-wrapper" id="similar-wrapper"></div>
@@ -49,25 +51,16 @@
     <script src="https://www.youtube.com/iframe_api"></script>
     <script type="module">
         import { initHeader, updateHeaderAuth } from '/static/js/header.js';
+        import { startAuthSessionMonitor } from '/static/js/auth.js';
 
         initHeader();
 
-        fetch("/api/userinfo", { method: "GET" })
-        .then((res) => {
-            if (!res.ok) throw new Error("Non connecté");
-            return res.json();
-        })
-        .then((data) => {
-            localStorage.setItem('nl_user', JSON.stringify({ username: data.username }));
-            updateHeaderAuth({ isLoggedIn: true, username: data.username });
-        })
-        .catch(() => {
-            localStorage.removeItem('nl_user');
-            updateHeaderAuth({ isLoggedIn: false });
+        startAuthSessionMonitor({
+            updateHeaderAuth,
+            redirectToLogin: true,
         });
 
         document.addEventListener('nl:auth:logout', () => {
-            localStorage.removeItem('nl_user');
             window.location.href = '/logout';
         });
     </script>
@@ -78,7 +71,7 @@
             const mediaId = params.get("id");
             const mediaType = params.get("type") || "movie";
             const title = document.querySelector("h1")?.textContent || "";
-            const poster = document.querySelector("img:nth-child(3)")?.src || "";
+            const poster = document.querySelector(".detail-poster")?.src || "";
 
             const btn = document.getElementById("favori-btn");
             if (!btn || !mediaId) return;

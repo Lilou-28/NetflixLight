@@ -19,26 +19,18 @@
 
     <script type="module">
         import { initHeader, updateHeaderAuth } from '/static/js/header.js';
+        import { startAuthSessionMonitor } from '/static/js/auth.js';
 
         initHeader();
 
-        fetch("/api/userinfo", { method: "GET" })
-        .then((res) => {
-            if (!res.ok) throw new Error("Session invalide ou non connectee");
-            return res.json();
-        })
-        .then((data) => {
-            document.getElementById("name").textContent = data.name || "-";
-            document.getElementById("username").textContent = data.username || "-";
-            document.getElementById("email").textContent = data.email || "-";
-
-            updateHeaderAuth({ isLoggedIn: true, username: data.username });
-
-            localStorage.setItem('nl_user', JSON.stringify({ username: data.username }));
-        })
-        .catch((err) => {
-            console.error(err);
-            window.location.href = "/login";
+        startAuthSessionMonitor({
+            updateHeaderAuth,
+            redirectToLogin: true,
+            onAuthenticated: (data) => {
+                document.getElementById("name").textContent = data.name || "-";
+                document.getElementById("username").textContent = data.username || "-";
+                document.getElementById("email").textContent = data.email || "-";
+            },
         });
 
         document.addEventListener('nl:auth:logout', () => {

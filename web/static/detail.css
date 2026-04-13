@@ -3,8 +3,8 @@
     --bg-bottom: #070b14;
     --text: #eef4ff;
     --muted: rgba(238, 244, 255, 0.78);
-    --accent: #ff6b2d;
-    --accent-strong: #ff8559;
+    --accent: #e50914;
+    --accent-strong: #b20710;
     --panel: rgba(8, 12, 20, 0.46);
     --line: rgba(255, 255, 255, 0.08);
     --banner-fade: linear-gradient(90deg, rgba(2, 4, 10, 0.94) 0%, rgba(2, 4, 10, 0.72) 18%, rgba(2, 4, 10, 0.28) 52%, rgba(2, 4, 10, 0.82) 100%), linear-gradient(180deg, rgba(2, 4, 10, 0.08) 0%, rgba(2, 4, 10, 0.28) 48%, rgba(2, 4, 10, 0.95) 100%);
@@ -207,6 +207,16 @@ body {
     z-index: 2;
 }
 
+.hero-actions {
+    position: relative;
+    z-index: 2;
+    margin: 0 4rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
 .hero > img:last-of-type {
     width: min(220px, 38vw);
     aspect-ratio: 2 / 3;
@@ -336,15 +346,21 @@ body {
 }
 
 .trailer-link {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     margin-top: 0.9rem;
     color: #fff;
     text-decoration: none;
-    font-weight: 700;
-    padding: 0.6rem 1rem;
-    border-radius: 999px;
+    font-weight: 500;
+    padding: 0.48rem 0.78rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
     background: linear-gradient(90deg, var(--accent), var(--accent-strong));
     transition: transform 0.18s ease, filter 0.18s ease;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    box-shadow: 0 10px 24px rgba(229, 9, 20, 0.22);
 }
 
 .trailer-link:hover {
@@ -352,73 +368,92 @@ body {
     filter: brightness(1.04);
 }
 
+.favori-btn,
+.play,
+.mute,
+.fullscreen {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0.45rem 0.72rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, filter 0.18s ease;
+}
+
+.favori-btn,
+.play {
+    border: 1px solid rgba(229, 9, 20, 0.5);
+    background: linear-gradient(90deg, rgba(229, 9, 20, 0.95), rgba(255, 53, 66, 0.92));
+    color: #fff;
+    box-shadow: 0 8px 16px rgba(229, 9, 20, 0.16);
+}
+
+.favori-btn:hover,
+.play:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.04);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.favori--active {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.08));
+    border-color: rgba(255, 255, 255, 0.22);
+    box-shadow: none;
+}
+
 .mute {
-    display: inline-block;
-    margin-top: 0.9rem;
     margin-left: 0.6rem;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 0.6rem 1rem;
+    margin-top: 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
     color: var(--text);
-    font-weight: 700;
+    font-weight: 400;
     background: rgba(255, 255, 255, 0.08);
     cursor: pointer;
-    transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
 }
 
 .mute:hover {
     transform: translateY(-2px);
     background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.22);
 }
 
 .mute:active {
     transform: translateY(0);
 }
 .fullscreen {
-    display: inline-block;
-    margin-top: 0.9rem;
     margin-left: 0.6rem;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 0.6rem 1rem;
+    margin-top: 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
     color: var(--text);
-    font-weight: 700;
+    font-weight: 400;
     background: rgba(255, 255, 255, 0.08);
     cursor: pointer;
-    transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
 }
 
 .fullscreen:hover {
     transform: translateY(-2px);
     background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.22);
 }
 
 .fullscreen:active {
     transform: translateY(0);
 }
 .play {
-    display: inline-block;
-    margin-top: 0.9rem;
     margin-left: 0.6rem;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 0.6rem 1rem;
-    color: var(--text);
-    font-weight: 700;
-    background: rgba(255, 255, 255, 0.08);
+    margin-top: 0.9rem;
     cursor: pointer;
-    transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
 }
 
-.play:hover {
-    transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.2);
-}
-
-.play:active {
+.play:active,
+.mute:active,
+.fullscreen:active,
+.favori-btn:active,
+.trailer-link:active {
     transform: translateY(0);
 }
 .trailer-empty {
@@ -430,14 +465,18 @@ body {
     margin: 0 4rem 3rem;
     appearance: none;
     border: 0;
-    border-radius: 999px;
-    padding: 0.95rem 1.4rem;
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
     color: #fff;
-    font-weight: 700;
-    letter-spacing: 0.01em;
+    font-weight: 500;
+    letter-spacing: 0.03em;
     background: linear-gradient(90deg, var(--accent), var(--accent-strong));
     cursor: pointer;
     transition: transform 0.18s ease, filter 0.18s ease, background-color 0.18s ease;
+}
+
+.hero-actions .favori-btn {
+    margin: 0;
 }
 
 .hero > button:hover {
@@ -467,6 +506,11 @@ body {
         margin-right: 1rem;
     }
 
+    .hero-actions {
+        margin-left: 1rem;
+        margin-right: 1rem;
+    }
+
     .hero > h1 {
         margin-top: 1rem;
         font-size: clamp(1.8rem, 8vw, 2.8rem);
@@ -492,6 +536,16 @@ body {
         width: auto;
         margin-left: 1rem;
         margin-right: 1rem;
+    }
+
+    .trailer-link,
+    .favori-btn,
+    .play,
+    .mute,
+    .fullscreen {
+        width: 100%;
+        margin-left: 0;
+        min-height: 34px;
     }
 
     .trailer-section {

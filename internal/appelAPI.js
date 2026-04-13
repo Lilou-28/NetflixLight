@@ -74,6 +74,14 @@ async function getSeriesSciFiFantasy(credential, page = 1) {
     return fetchTmdbJson("discover/tv", credential, { page: page, with_genres: 10765 })
 }
 
+async function getSeriesDrama(credential, page = 1) {
+    return fetchTmdbJson("discover/tv", credential, { page: page, with_genres: 18 })
+}
+
+async function getMoviesThriller(credential, page = 1) {
+    return fetchTmdbJson("discover/movie", credential, { page: page, with_genres: 53 })
+}
+
 async function searchmovie(credential, page = 1, query) {
     return fetchTmdbJson("search/movie", credential, {page : page, query : query})
 }
@@ -108,6 +116,8 @@ module.exports = {
     getMoviesFantasy,
     getSeriesActionAdventure,
     getSeriesSciFiFantasy,
+    getSeriesDrama,
+    getMoviesThriller,
     searchmovie,
     getMovieDetails,
     getTvDetails,

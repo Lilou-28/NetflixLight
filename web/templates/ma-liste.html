@@ -20,26 +20,16 @@
     <script src="/static/script/favoris.js"></script>
     <script type="module">
         import { initHeader, updateHeaderAuth } from '/static/js/header.js';
+        import { startAuthSessionMonitor } from '/static/js/auth.js';
 
         initHeader();
 
-        fetch("/api/userinfo", { method: "GET" })
-        .then((res) => {
-            if (!res.ok) throw new Error("Non connecté");
-            return res.json();
-        })
-        .then((data) => {
-            localStorage.setItem('nl_user', JSON.stringify({ username: data.username }));
-            updateHeaderAuth({ isLoggedIn: true, username: data.username });
-        })
-        .catch(() => {
-            localStorage.removeItem('nl_user');
-            updateHeaderAuth({ isLoggedIn: false });
-            window.location.href = '/login';
+        startAuthSessionMonitor({
+            updateHeaderAuth,
+            redirectToLogin: true,
         });
 
         document.addEventListener('nl:auth:logout', () => {
-            localStorage.removeItem('nl_user');
             window.location.href = '/logout';
         });
     </script>
