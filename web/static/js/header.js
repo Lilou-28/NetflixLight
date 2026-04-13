@@ -30,7 +30,6 @@ function _renderHeader(header) {
         <a href="/acceuil" class="nl-nav__link" data-route="home">Accueil</a>
         <a href="/series" class="nl-nav__link" data-route="series">Séries</a>
         <a href="/films" class="nl-nav__link" data-route="films">Films</a>
-        <a href="/tendances" class="nl-nav__link" data-route="tendances">Tendances</a>
         <a href="/ma-liste" class="nl-nav__link nl-nav__link--auth" data-route="watchlist">Ma liste</a>
       </nav>
 
