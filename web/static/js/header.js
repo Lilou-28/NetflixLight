@@ -61,10 +61,7 @@ function _renderHeader(header) {
             </svg>
           </button>
           <div class="nl-dropdown" id="nl-dropdown" hidden role="menu">
-            <a href="#/profil" class="nl-dropdown__item" data-link role="menuitem">Mon profil</a>
-            <a href="#/ma-liste" class="nl-dropdown__item nl-nav__link--auth" data-link role="menuitem">Ma liste</a>
-            <a href="#/parametres" class="nl-dropdown__item" data-link role="menuitem">Paramètres</a>
-            <hr class="nl-dropdown__sep" />
+             <a href="/userinfo" class="nl-dropdown__item" role="menuitem">Mon profil</a>
             <button class="nl-dropdown__item nl-dropdown__item--danger" id="nl-logout-btn" role="menuitem">Déconnexion</button>
           </div>
         </div>
