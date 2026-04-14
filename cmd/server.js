@@ -9,58 +9,12 @@ const { getMovies, getSeries, getTopRatedMovies, getTopRatedSeries, getMoviesAct
 const { shuffleArray } = require("../internal/arrayUtils")
 const { escapeHtml } = require("../internal/htmlUtils")
 const { getYoutubeTrailer, getLocalizedDetails, getRandomCarouselPage } = require("../internal/tmdbUtils")
+const { getSessionCookie, getExpiredSessionCookie } = require("../internal/cookies")
+const { formatLocalDateTime, clearSessionAndRedirectToLogin, clearSessionAndSendUnauthorized, serve404, serve500 } = require("../internal/responseHandlers")
 
 const host = 'localhost'
 const port = 8080
 const tmdbBearerToken = process.env.TMDB_BEARER_TOKEN || ""
-const isSecureCookie = process.env.NODE_ENV === "production"
-
-function getSessionCookie(token, maxAgeSeconds = 7200) {
-    return [
-        `session_token=${encodeURIComponent(token)}`,
-        "Path=/",
-        `Max-Age=${maxAgeSeconds}`,
-        "SameSite=Lax",
-        "HttpOnly",
-        isSecureCookie ? "Secure" : "",
-    ].filter(Boolean).join("; ")
-}
-
-function getExpiredSessionCookie() {
-    return [
-        "session_token=",
-        "Path=/",
-        "Max-Age=0",
-        "SameSite=Lax",
-        "HttpOnly",
-        isSecureCookie ? "Secure" : "",
-    ].filter(Boolean).join("; ")
-}
-
-function formatLocalDateTime(date) {
-    const pad = (value) => String(value).padStart(2, "0")
-    return [
-        date.getFullYear(),
-        pad(date.getMonth() + 1),
-        pad(date.getDate()),
-    ].join("-") + ` ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
-}
-
-function clearSessionAndRedirectToLogin(res) {
-    res.writeHead(302, {
-        "Set-Cookie": getExpiredSessionCookie(),
-        "Location": "/login?session_expired=1",
-    })
-    res.end()
-}
-
-function clearSessionAndSendUnauthorized(res, message = "Session invalide") {
-    res.writeHead(401, {
-        "Content-Type": "application/json",
-        "Set-Cookie": getExpiredSessionCookie(),
-    })
-    res.end(JSON.stringify({ error: message }))
-}
 
 const mimeTypes = {
     ".css": "text/css",
@@ -75,6 +29,7 @@ const mimeTypes = {
 
 
 const server = http.createServer((req, res) => {
+    // Nettoyage des tokens expirés à chaque requête pour éviter d'avoir des tokens invalides en base
     if (req.url === "/") {
     const sessionToken = getSessionTokenFromCookie(req);
     if (!sessionToken) {
@@ -93,7 +48,9 @@ const server = http.createServer((req, res) => {
         res.end();
     });
     }
+    // Route pour la page de détails d'un film/série
     else if (req.url.startsWith("/details")) {
+        // Vérification de la session utilisateur avant de servir la page de détails
         const sessionToken = getSessionTokenFromCookie(req);
         if (!sessionToken) {
             res.writeHead(302, { "Location": "/login" });
@@ -116,7 +73,7 @@ const server = http.createServer((req, res) => {
                 res.end("Aucun id fourni");
                 return;
             }
-
+            // Récupération des détails localisés du film/série avant de servir la page de détails, pour éviter d'avoir une page de détails qui se charge sans données pendant que les détails sont récupérés côté client
             (async () => {
                 try {
                     const movie = await getLocalizedDetails(contentType, movieId, tmdbBearerToken, "fr-FR")
@@ -215,7 +172,7 @@ const server = http.createServer((req, res) => {
                                 <p class="trailer-empty">Bande annonce indisponible pour ce contenu.</p>
                                 <a class="trailer-link" href="${trailerSearchUrl}" target="_blank" rel="noopener noreferrer">Rechercher sur YouTube</a>
                             `
-
+                        // Insertion des données du film/série dans le template HTML
                         const html = data
                             .replace("{{title}}", movieTitle)
                             .replace("{{overview}}", movie.overview || "Aucune description disponible")
@@ -234,19 +191,23 @@ const server = http.createServer((req, res) => {
                         res.end(html);
                     });
                 } catch (error) {
-                    res.writeHead(500, { "Content-Type": "text/plain" });
-                    res.end("Erreur lors du chargement du film");
+                    serve500(res);
                 }
             })();
         });
     }
-    
+    // Route pour la page d'accueil après connexion
     else if (req.method === "GET" && req.url.startsWith("/login")){
         fs.readFile(path.join(__dirname, "../web/templates/login.html"), (err,data) => {
+            if (err) {
+                serve500(res);
+                return;
+            }
             res.writeHead(200, {"Content-Type" :  "text/html"})
             res.end(data)
         })
     }
+    // Recupération des données de l'utilisateur connecté pour la page userinfo
     else if (req.method === "POST" && req.url === "/login") {
         let body = ""
         req.on("data", chunk => {
@@ -260,8 +221,7 @@ const server = http.createServer((req, res) => {
             const query = `SELECT * FROM users WHERE username = ?`
             db.get(query, [username], async (err, row) => {
                 if (err) {
-                    res.writeHead(500, {"Content-Type" : "text/plain"})
-                    res.end("Erreur lors de la connexion")
+                    serve500(res)
                     return
                 }
 
@@ -276,11 +236,10 @@ const server = http.createServer((req, res) => {
                     isPasswordValid = await verifyPassword(password, row.password)
                 } catch (verifyErr) {
                     console.error("Erreur lors de la verification du mot de passe:", verifyErr)
-                    res.writeHead(500, {"Content-Type" : "text/plain"})
-                    res.end("Erreur lors de la connexion")
+                    serve500(res)
                     return
                 }
-
+                // Verification du mot de passe et création d'une session si le mot de passe est correct
                 if (isPasswordValid) {
                     const token = generateToken()
                     const sessionLifetimeMs = 2 * 60 * 60 * 1000 
@@ -296,8 +255,7 @@ const server = http.createServer((req, res) => {
                             (insertErr) => {
                                 if (insertErr) {
                                     console.error("Erreur lors de la création du token :", insertErr)
-                                    res.writeHead(500, {"Content-Type" : "text/plain"})
-                                    res.end("Erreur lors de la creation de session")
+                                    serve500(res)
                                     return
                                 }
 
@@ -316,12 +274,18 @@ const server = http.createServer((req, res) => {
             })
         })
     }
+    // Route pour la page d'inscription
     else if (req.method === "GET" && req.url === "/register"){
         fs.readFile(path.join(__dirname, "../web/templates/register.html"), (err,data) => {
+            if (err) {
+                serve500(res)
+                return
+            }
             res.writeHead(200, {"Content-Type" :  "text/html"})
             res.end(data)
         })
     }
+    // Route pour la page d'informations de l'utilisateur connecté
     else if (req.method === "GET" && req.url === "/userinfo") {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -338,8 +302,7 @@ const server = http.createServer((req, res) => {
 
             fs.readFile(path.join(__dirname, "../web/templates/userinfo.html"), (err, data) => {
                 if (err) {
-                    res.writeHead(500, {"Content-Type": "text/plain"})
-                    res.end("Erreur lors du chargement de la page userinfo")
+                    serve500(res)
                     return
                 }
 
@@ -348,7 +311,7 @@ const server = http.createServer((req, res) => {
             })
         })
     }
-
+    // Route pour le traitement de l'inscription d'un nouvel utilisateur
     else if (req.method === "POST" && req.url === "/register") {
         let body = ""
         req.on("data", chunk => {
@@ -372,8 +335,7 @@ const server = http.createServer((req, res) => {
                 hashedpassword = await hashPassword(password)
             } catch (hashErr) {
                 console.error("Erreur lors du hash du mot de passe:", hashErr)
-                res.writeHead(500, {"Content-Type" : "text/plain"})
-                res.end("Erreur lors de l'inscription")
+                serve500(res)
                 return
             }
 
@@ -384,8 +346,7 @@ const server = http.createServer((req, res) => {
                         res.end("Email ou nom d'utilisateur déjà utilisé")
                         return
                     }
-                    res.writeHead(500, {"Content-Type" : "text/plain"})
-                    res.end("Erreur lors de l'inscription")
+                    serve500(res)
                     return
                 }
 
@@ -394,6 +355,7 @@ const server = http.createServer((req, res) => {
             })
         })
     }
+    // Route pour récupérer les détails localisés d'un film/série depuis TMDB
     else if (req.method === "GET" && req.url.startsWith("/api/tmdb/details")) {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -439,6 +401,7 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
+    // Route pour servir les fichiers statiques (CSS, JS, images)
     else if (req.url && req.url.startsWith("/static/")) {
         const filePath = path.join(__dirname, "../web", req.url)
         const ext = path.extname(filePath).toLowerCase()
@@ -454,6 +417,7 @@ const server = http.createServer((req, res) => {
             res.end(data)
         })
     }
+    // Route pour recupérer les données de l'utilisateur connecté pour la page userinfo
     else if (req.url === "/api/userinfo" && req.method === "GET") {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -489,6 +453,7 @@ const server = http.createServer((req, res) => {
             })
         })
     }
+    // Routes pour récupérer les données de TMDB pour les carrousels de la page d'accueil
     else if (req.url === "/api/popular-mixed" && req.method === "GET") {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -509,7 +474,7 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({error: "TMDB_BEARER_TOKEN manquant dans les variables d'environnement"}))
                 return
             }
-
+            // Récupération simultanée des films et séries populaires pour créer un carrousel mixte
             Promise.all([
                 getRandomCarouselPage(getMovies, tmdbBearerToken, 500),
                 getRandomCarouselPage(getSeries, tmdbBearerToken, 500),
@@ -533,7 +498,9 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
+    // Route pour récupérer les films populaires pour le carrousel de la page d'accueil
     else if (req.url === "/api/popular-movies" && req.method === "GET") {
+        // Vérification de la session utilisateur avant de récupérer les données de TMDB
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
             res.writeHead(401, {"Content-Type": "application/json"})
@@ -569,6 +536,7 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
+    // Route pour récupérer les séries populaires pour le carrousel de la page d'accueil
     else if (req.url === "/api/popular-series" && req.method === "GET") {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -605,6 +573,7 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
+    // Route pour récupérer les films et séries tendances de la semaine pour le carrousel de la page d'accueil
     else if (req.url === "/api/trending-mixed" && req.method === "GET") {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -642,6 +611,7 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
+    // Route pour récupérer les films et séries mieux notés pour le carrousel de la page d'accueil
     else if (req.url === "/api/top-rated-mixed" && req.method === "GET") {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -686,6 +656,7 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
+    // Route pour récupérer les films mieux notés pour le carrousel de la page d'accueil
     else if (req.url === "/api/top-rated-movies" && req.method === "GET") {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -722,6 +693,7 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
+    // Route pour récupérer les séries mieux notés pour le carrousel de la page d'accueil
     else if (req.url === "/api/top-rated-series" && req.method === "GET") {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -758,6 +730,7 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
+    // Route pour récupérer les films/séries similaires à un film/série donné pour la page de détails
     else if (req.url.startsWith("/api/similar") && req.method === "GET") {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -807,6 +780,7 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
+    // Route pour récupérer les films/séries d'action et fantasy pour les carrousels de la page d'accueil
     else if (req.url === "/discover/movie-action" && req.method === "GET"){
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -848,6 +822,7 @@ const server = http.createServer((req, res) => {
             })
         })
     }
+    // Route pour récupérer uniquement les films d'action pour le carrousel de la page d'accueil
     else if (req.url === "/discover/movie-action-only" && req.method === "GET"){
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -883,6 +858,7 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
+    // Route pour récupérer les films et séries fantasy pour les carrousels de la page d'accueil
     else if (req.url === "/discover/movie-fantasy" && req.method === "GET"){
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -924,6 +900,7 @@ const server = http.createServer((req, res) => {
             })
         })
     }
+    // Route pour récupérer uniquement les films fantasy pour le carrousel de la page d'accueil
     else if (req.url === "/discover/movie-fantasy-only" && req.method === "GET"){
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -959,6 +936,7 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
+    // Route pour récupérer uniquement les films thriller pour le carrousel de la page d'accueil
     else if (req.url === "/discover/movie-thriller-only" && req.method === "GET"){
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -993,6 +971,7 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
+    // Route pour récupérer uniquement les séries d'action et d'aventure pour le carrousel de la page d'accueil
     else if (req.url === "/discover/series-action-only" && req.method === "GET"){
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -1027,6 +1006,7 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
+    // Route pour récupérer uniquement les séries de science-fiction et fantasy pour le carrousel de la page d'accueil
     else if (req.url === "/discover/series-sci-fi-only" && req.method === "GET"){
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -1061,6 +1041,7 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
+    // Route pour récupérer uniquement les séries dramatiques pour le carrousel de la page d'accueil
     else if (req.url === "/discover/series-drama-only" && req.method === "GET"){
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -1095,6 +1076,7 @@ const server = http.createServer((req, res) => {
                 })
         })
     }
+    // Route pour gérer la déconnexion de l'utilisateur
     else if (req.url === "/logout") {
         const sessionToken = getSessionTokenFromCookie(req)
         const finalizeLogout = () => {
@@ -1109,11 +1091,12 @@ const server = http.createServer((req, res) => {
             finalizeLogout()
             return
         }
-
+        // Suppression du token de session de la base de données pour invalider la session
         db.run("DELETE FROM tokens WHERE token = ?", [sessionToken], () => {
             finalizeLogout()
         })
     }
+    
     else if (req.url === "/acceuil") {
         const sessionToken = getSessionTokenFromCookie(req)
         if (!sessionToken) {
@@ -1130,8 +1113,7 @@ const server = http.createServer((req, res) => {
 
             fs.readFile(path.join(__dirname,"../web/templates/acceuil.html"), (err, data) => {
                 if (err) {
-                    res.writeHead(500, {"Content-Type" : "text/plain" })
-                    res.end("Erreur lors du chargement de la page d'accueil")
+                    serve500(res)
                     return
                 }
 
@@ -1153,6 +1135,10 @@ const server = http.createServer((req, res) => {
                 return;
             }
             fs.readFile(path.join(__dirname, "../web/templates/series.html"), (err, data) => {
+                if (err) {
+                    serve500(res)
+                    return
+                }
                 res.writeHead(200, { "Content-Type": "text/html" });
                 res.end(data);
             });
@@ -1171,6 +1157,10 @@ const server = http.createServer((req, res) => {
                 return;
             }
             fs.readFile(path.join(__dirname, "../web/templates/films.html"), (err, data) => {
+                if (err) {
+                    serve500(res)
+                    return
+                }
                 res.writeHead(200, { "Content-Type": "text/html" });
                 res.end(data);
             });
@@ -1190,6 +1180,10 @@ const server = http.createServer((req, res) => {
             return;
         }
         fs.readFile(path.join(__dirname, "../web/templates/ma-liste.html"), (err, data) => {
+            if (err) {
+                serve500(res)
+                return
+            }
             res.writeHead(200, { "Content-Type": "text/html" });
             res.end(data);
         });
@@ -1358,8 +1352,7 @@ else if (req.url.startsWith("/api/favoris/") && req.method === "DELETE") {
 
         fs.readFile(path.join(__dirname, filePath), "utf8", (err, data) => {
             if (err) {
-                res.writeHead(500, {"Content-Type": "text/plain"})
-                res.end("Erreur serveur")
+                serve500(res)
                 return
             }
 
@@ -1391,8 +1384,7 @@ else if (req.url.startsWith("/api/favoris/") && req.method === "DELETE") {
 }
 
     else {
-        res.writeHead(404, {"Content-Type" : "text/plain"})
-        res.end("Page non trouvée")
+        serve404(res)
     }
 })
 

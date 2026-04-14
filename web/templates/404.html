@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/404.css">
+	<link rel="stylesheet" href="/static/header.css">
+	<link rel="stylesheet" href="/static/index.css">
+	<link rel="icon" href="../static/img/Logo-onglet-nl.png" type="image/png">
+	<title>404 - Page non trouvée</title>
+</head>
+<body>
+	<header id="main-header"></header>
+
+	<main class="error-container">
+		<div class="error-content">
+			<div class="error-icon">🔍</div>
+			<h1 class="error-code">404</h1>
+			<h2 class="error-title">Page non trouvée</h2>
+			<p class="error-desc">Désolé, la page que vous recherchez n'existe pas ou a été supprimée.</p>
+			<div class="error-actions">
+				<a href="/acceuil" class="error-btn error-btn--primary">Retour à l'accueil</a>
+				<a href="/films" class="error-btn error-btn--secondary">Découvrir des films</a>
+			</div>
+		</div>
+	</main>
+
+	<script type="module">
+		import { initHeader } from '/static/js/header.js';
+		initHeader();
+	</script>
+</body>
+</html>

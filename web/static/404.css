@@ -1,0 +1,86 @@
+.error-container {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			min-height: calc(100vh - 68px);
+			padding: 2rem;
+			text-align: center;
+		}
+
+		.error-content {
+			max-width: 600px;
+			padding: 3rem 2rem;
+			background: rgba(0, 0, 0, 0.5);
+			backdrop-filter: blur(10px);
+			border-radius: 12px;
+			border: 1px solid rgba(255, 255, 255, 0.1);
+			box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+		}
+
+		.error-code {
+			font-size: clamp(4rem, 10vw, 8rem);
+			font-weight: 900;
+			color: var(--accent);
+			margin: 0;
+			line-height: 1;
+		}
+
+		.error-title {
+			font-size: clamp(1.5rem, 5vw, 2.5rem);
+			font-weight: 700;
+			color: var(--text);
+			margin: 1rem 0 0.5rem;
+		}
+
+		.error-desc {
+			font-size: 1rem;
+			color: rgba(245, 245, 245, 0.7);
+			margin: 1rem 0 2rem;
+			line-height: 1.6;
+		}
+
+		.error-actions {
+			display: flex;
+			gap: 1rem;
+			flex-wrap: wrap;
+			justify-content: center;
+		}
+
+		.error-btn {
+			padding: 0.8rem 1.5rem;
+			border-radius: 4px;
+			font-size: 0.875rem;
+			font-weight: 600;
+			text-decoration: none;
+			cursor: pointer;
+			border: none;
+			transition: all 0.2s ease;
+			display: inline-block;
+		}
+
+		.error-btn--primary {
+			background: var(--accent);
+			color: #fff;
+		}
+
+		.error-btn--primary:hover {
+			background: #c5010a;
+			transform: translateY(-2px);
+		}
+
+		.error-btn--secondary {
+			background: rgba(255, 255, 255, 0.1);
+			color: var(--text);
+			border: 1px solid rgba(255, 255, 255, 0.2);
+		}
+
+		.error-btn--secondary:hover {
+			background: rgba(255, 255, 255, 0.15);
+			border-color: rgba(255, 255, 255, 0.3);
+		}
+
+		.error-icon {
+			font-size: 4rem;
+			margin-bottom: 1rem;
+			opacity: 0.3;
+		}
