@@ -111,6 +111,7 @@
 }
 .nl-dropdown__item { display: block; width: 100%; padding: 8px 16px; color: #e5e5e5; font-size: 0.8125rem; text-decoration: none; background: none; border: none; cursor: pointer; text-align: left; }
 .nl-dropdown__item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+.nl-dropdown__item--danger:hover { border-radius: 0; }
 .nl-dropdown__item--danger { color: #e87c7c; }
 .nl-dropdown__sep { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 6px 0; }
 

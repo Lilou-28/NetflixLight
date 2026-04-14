@@ -283,7 +283,7 @@ const server = http.createServer((req, res) => {
 
                 if (isPasswordValid) {
                     const token = generateToken()
-                    const sessionLifetimeMs = 2 * 60 * 60 * 1000
+                    const sessionLifetimeMs = 2 * 60 * 60 * 1000 
                     const expiresAt = formatLocalDateTime(new Date(Date.now() + sessionLifetimeMs))
                     cleanupExpiredTokens(() => {
                         db.run(
