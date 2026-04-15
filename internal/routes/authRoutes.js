@@ -22,13 +22,8 @@ function createAuthRoutes({ templatesDir }) {
     router.post("/login", async (req, res) => {
         const { username, password } = req.body
 
-        if (!username || username.length < 3) {
-            res.status(400).send("Username min 3 chars")
-            return
-        }
-
-        if (!password || password.length < 6) {
-            res.status(400).send("Password min 6 chars")
+        if (!username || !password) {
+            res.status(400).send("Username et mot de passe requis")
             return
         }
 
@@ -86,6 +81,16 @@ function createAuthRoutes({ templatesDir }) {
     // Route pour traiter le formulaire d'inscription
     router.post("/register", async (req, res) => {
         const { name, email, username, password, confirm_password: confirmPassword } = req.body
+
+        if (!username || username.length < 3) {
+            res.status(400).send("Username min 3 chars")
+            return
+        }
+
+        if (!password || password.length < 6) {
+            res.status(400).send("Password min 6 chars")
+            return
+        }
 
         if (password !== confirmPassword) {
             res.status(400).type("text/plain").send("Les mots de passe ne correspondent pas")
