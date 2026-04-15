@@ -24,6 +24,7 @@ npm install
 # Créer le fichier d'environnement
 cp .env.example .env
 # Puis renseigner votre TMDB_BEARER_TOKEN dans .env
+# Ajuster aussi HOST et PORT  si besoin
 
 # Lancer le serveur
 node cmd/server.js
@@ -42,7 +43,9 @@ L'application est accessible sur `http://localhost:8080`.
 5. Créer un fichier `.env` à la racine du projet :
 
 ```
-TMDB_BEARER_TOKEN=eyJ...votre_token
+TMDB_BEARER_TOKEN=votre_token
+HOST=localhost
+PORT=8080
 ```
 
 ---
@@ -52,13 +55,25 @@ TMDB_BEARER_TOKEN=eyJ...votre_token
 ```
 NetflixLight/
 ├── cmd/
-│   └── server.js               # Serveur HTTP Node.js — routes et logique backend
+│   └── server.js               # Point d'entrée Express et montage des routes
 ├── internal/
 │   ├── appelAPI.js             # Appels à l'API TMDB
+│   ├── arrayUtils.js           # Helpers sur les tableaux
+│   ├── cookies.js              # Gestion des cookies de session
 │   ├── database.js             # Connexion SQLite et création des tables
 │   ├── dbNetflixLight.db       # Base de données SQLite (ignorée par git)
+│   ├── detailTemplate.js       # Rendu du template de la page détail
 │   ├── hashmdp.js              # Hachage et vérification des mots de passe (bcrypt)
-│   └── token.js                # Génération et vérification des tokens de session
+│   ├── htmlUtils.js            # Échappement HTML
+│   ├── responseHandlers.js     # Réponses d'erreur et helpers HTTP
+│   ├── serverRuntime.js        # Helpers partagés pour les routes
+│   ├── tmdbUtils.js            # Normalisation et enrichissement des données TMDB
+│   ├── token.js                # Génération et vérification des tokens de session
+│   └── routes/
+│       ├── APIRoutes.js        # Routes API TMDB et données applicatives
+│       ├── authRoutes.js       # Connexion, inscription, déconnexion
+│       ├── favoritesRoutes.js  # Gestion des favoris
+│       └── pagesRoutes.js      # Pages HTML et route SPA
 ├── web/
 │   ├── static/
 │   │   ├── js/
@@ -96,11 +111,13 @@ NetflixLight/
 
 ## Choix techniques
 
-**Node.js HTTP natif** — Le serveur utilise le module `http` natif de Node.js plutôt qu'Express, pour rester au plus près des fondamentaux et comprendre le fonctionnement des requêtes HTTP.
+**Express** — Le serveur repose maintenant sur Express, ce qui simplifie le découpage en routes dédiées, la gestion des fichiers statiques et le parsing des requêtes.
 
 **SQLite** — Base de données légère, sans serveur, adaptée à un prototype. Les tables `users`, `tokens` et `favoris` couvrent l'ensemble des besoins de persistance.
 
 **Sessions par cookie** — L'authentification repose sur un token stocké en cookie HTTP. Chaque route protégée vérifie ce token avant de répondre.
+
+**Découpage backend** — Les routes sont séparées par domaine fonctionnel: authentification, pages, favoris et API TMDB. Les helpers communs vivent dans `serverRuntime.js`.
 
 **Routing SPA hash-based** — Un router JS côté client intercepte les changements de hash (`#/series`, `#/films`) et charge les pages dynamiquement via des routes `/api/page/...` côté serveur, sans rechargement de page.
 
@@ -123,6 +140,7 @@ NetflixLight/
 - Page Ma liste (Watchlist) avec suppression des favoris
 - Routing SPA hash-based
 - Déconnexion
+- Session utilisateur revalidée côté client via `/api/userinfo`
 
 ---
 
@@ -130,7 +148,7 @@ NetflixLight/
 
 | Méthode | Route | Auth | Description |
 |---------|-------|------|-------------|
-| GET | `/` | Non | Redirige vers `/acceuil` ou `/login` selon la session |
+| GET | `/` | Oui/Non | Redirige vers `/acceuil` ou `/login` selon la session |
 | GET | `/login` | Non | Page de connexion |
 | POST | `/login` | Non | Authentifie l'utilisateur, crée une session |
 | GET | `/register` | Non | Page d'inscription |
@@ -145,12 +163,24 @@ NetflixLight/
 | GET | `/api/userinfo` | Oui | Données utilisateur connecté (JSON) |
 | GET | `/api/favoris` | Oui | Liste des favoris de l'utilisateur (JSON) |
 | POST | `/api/favoris` | Oui | Ajouter un favori |
-| DELETE | `/api/favoris/:id` | Oui | Supprimer un favori |
+| DELETE | `/api/favoris/:mediaId` | Oui | Supprimer un favori |
+| GET | `/api/page/:page` | Oui/Non | Charge un fragment HTML pour le router SPA |
 | GET | `/api/popular-mixed` | Oui | Films et séries populaires mélangés |
+| GET | `/api/popular-movies` | Oui | Films populaires |
+| GET | `/api/popular-series` | Oui | Séries populaires |
 | GET | `/api/trending-mixed` | Oui | Tendances films et séries |
 | GET | `/api/top-rated-mixed` | Oui | Mieux notés films et séries |
+| GET | `/api/top-rated-movies` | Oui | Films mieux notés |
+| GET | `/api/top-rated-series` | Oui | Séries mieux notées |
 | GET | `/api/similar?id=` | Oui | Contenus similaires |
 | GET | `/discover/movie-action` | Oui | Films et séries d'action |
+| GET | `/discover/movie-action-only` | Oui | Films d'action |
 | GET | `/discover/movie-fantasy` | Oui | Films et séries fantasy |
+| GET | `/discover/movie-fantasy-only` | Oui | Films fantasy |
+| GET | `/discover/movie-thriller-only` | Oui | Films thriller |
+| GET | `/discover/series-action-only` | Oui | Séries d'action |
+| GET | `/discover/series-sci-fi-only` | Oui | Séries science-fiction et fantasy |
+| GET | `/discover/series-drama-only` | Oui | Séries dramatiques |
 | GET | `/search-movie?query=` | Oui | Recherche TMDB |
+| GET | `/api/tmdb/details?id=&type=&language=` | Oui | Détails TMDB localisés en JSON |
 | GET | `/static/*` | Non | Fichiers statiques (CSS, JS, images) |
