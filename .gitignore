@@ -5,6 +5,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+.cookies.tkt
 
 # Database files
 internal/*.db

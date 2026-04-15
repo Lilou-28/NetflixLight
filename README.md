@@ -4,7 +4,9 @@ Plateforme de streaming vidéo développée dans le cadre d'un projet scolaire. 
 
 ---
 
-## Installation
+## Lien Gestion de Projet
+
+https://trello.com/invite/b/69b6e9b0ab9a970bfdc21bc5/ATTI5b13deea61fff93491de46c589f28f24D98C4BDC/netflix-light
 
 ### Prérequis
 
