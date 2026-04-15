@@ -1,3 +1,4 @@
+// Melange le tableau 
 function shuffleArray(items) {
     const array = [...items]
     for (let i = array.length - 1; i > 0; i--) {

@@ -156,7 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
       emptyErrorMessage: "Aucun contenu similaire recu depuis l'API",
     });
   }
-
+  // Charger les carrousels pour chaque configuration définie
   for (const config of configs) {
     window.loadCarousel?.(config);
   }

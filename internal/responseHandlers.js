@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const { getExpiredSessionCookie } = require('./cookies')
-
+// pour afficher les dates dans la base de donnees corectement
 function formatLocalDateTime(date) {
     const pad = (value) => String(value).padStart(2, "0")
     return [
@@ -10,7 +10,7 @@ function formatLocalDateTime(date) {
         pad(date.getDate()),
     ].join("-") + ` ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
-
+//redirecte vers la page de login en supprimant la session
 function clearSessionAndRedirectToLogin(res) {
     res.writeHead(302, {
         "Set-Cookie": getExpiredSessionCookie(),
@@ -18,7 +18,7 @@ function clearSessionAndRedirectToLogin(res) {
     })
     res.end()
 }
-
+//supprime la session et envoie une réponse 401 (Non autorisé)
 function clearSessionAndSendUnauthorized(res, message = "Session invalide") {
     res.writeHead(401, {
         "Content-Type": "application/json",
@@ -26,7 +26,7 @@ function clearSessionAndSendUnauthorized(res, message = "Session invalide") {
     })
     res.end(JSON.stringify({ error: message }))
 }
-
+// Fonction générique pour servir une page d'erreur personnalisée (404 ou 500)
 function serveErrorPage(res, statusCode, templatePath) {
     fs.readFile(path.join(__dirname, templatePath), "utf8", (err, data) => {
         if (err) {
@@ -38,7 +38,7 @@ function serveErrorPage(res, statusCode, templatePath) {
         res.end(data);
     });
 }
-
+// fonction pour afficher une page 404/500 personnalisée
 function serve404(res) {
     serveErrorPage(res, 404, "../web/templates/404.html");
 }

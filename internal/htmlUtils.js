@@ -1,3 +1,4 @@
+// remplace les caractères spéciaux par leurs entités HTML correspondantes pour éviter les problèmes d'affichage et de sécurité
 function escapeHtml(value) {
     return String(value)
         .replace(/&/g, "&amp;")

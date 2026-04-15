@@ -7,9 +7,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
     if (err){
         console.error(err.message)
     }
-    console.log("Connecté a SQLite")
+    console.log("Connecté à SQLite")
 })
-
+// Initialise la base de données et crée les tables si elles n'existent pas
 db.serialize(() => {
     db.run(`
         CREATE TABLE IF NOT EXISTS users (
@@ -58,8 +58,15 @@ db.serialize(() => {
         FOREIGN KEY (user_id) REFERENCES users(id)
         );
     `)
-})
+    db.run(`
+        CREATE INDEX IF NOT EXISTS idx_favoris_user_id ON favoris(user_id);
+    `)
+    db.run(`
+        CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+    `)
 
+})
+// insert les donne dans la table users
 function registerUser(name, email, username, password, callback) {
     const query = `
         INSERT INTO users (name, email, username,password)

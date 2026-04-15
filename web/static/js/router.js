@@ -35,14 +35,18 @@ async function loadPage(path) {
     const doc = parser.parseFromString(html, 'text/html');
     const main = doc.querySelector('main');
 
-    app.innerHTML = main ? main.innerHTML : html;
+    if (main) {
+        app.innerHTML = main.innerHTML;
+    } else {
+        app.textContent = "Page introuvable.";
+    }
 
     // Re-exécuter les scripts de la page chargée
     _executeScripts(app);
 
   } catch (err) {
     console.error(err);
-    app.innerHTML = '<p style="color:white;padding:2rem">Page introuvable.</p>';
+    app.textContent = 'Page introuvable.';
   }
 }
 

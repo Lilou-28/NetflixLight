@@ -15,6 +15,7 @@ function removeExistingSessionExpiredPopup() {
 }
 
 export function showSessionExpiredPopup(loginPath = "/login") {
+    // verifir si env est un navigateur sinon pas de popup et redirige direct
     if (typeof document === "undefined") {
         if (window.location.pathname !== loginPath) {
             window.location.href = loginPath
@@ -73,7 +74,7 @@ export function showSessionExpiredPopup(loginPath = "/login") {
         window.location.href = loginPath
     }, SESSION_EXPIRED_REDIRECT_DELAY_MS)
 }
-
+//verifie connecter 
 async function fetchCurrentUser() {
     const response = await fetch("/api/userinfo", {
         method: "GET",
@@ -92,49 +93,43 @@ async function fetchCurrentUser() {
     const user = await response.json()
     return { authenticated: true, user }
 }
-
+// stoper le suivi de session précédent s'il existe pour éviter les conflits et les fuites de mémoire
 function stopPreviousMonitor() {
     if (typeof window.__nlAuthMonitorCleanup === "function") {
-        window.__nlAuthMonitorCleanup()
+        window.__nlAuthMonitorCleanup() 
     }
 }
-
+// appliquer l'état authentifié en mettant à jour le header avec les infos de l'utilisateur
 function applyAuthenticatedState(updateHeaderAuth, user) {
     updateHeaderAuth({ isLoggedIn: true, username: user.username })
 }
-
+// appliquer l'état déconnecté en mettant à jour le header pour refléter que l'utilisateur n'est pas connecté
 function applyLoggedOutState(updateHeaderAuth) {
     updateHeaderAuth({ isLoggedIn: false })
 }
 
 export function startAuthSessionMonitor({
-    updateHeaderAuth,
+    updateHeaderAuth, // fonction pour mettre à jour le header en fonction de l'état de connexion
     redirectToLogin = false,
     loginPath = "/login",
     intervalMs = DEFAULT_AUTH_CHECK_INTERVAL_MS,
-    onAuthenticated,
-    onUnauthenticated,
-    onError,
+    onAuthenticated, // callback facultatif appelé après une vérification réussie de session avec les infos de l'utilisateur
 } = {}) {
     if (typeof updateHeaderAuth !== "function") {
         throw new TypeError("updateHeaderAuth est requis pour initialiser le suivi de session")
     }
-
+    // stopper tout suivi de session précédent pour éviter les conflits et les fuites de mémoire
     stopPreviousMonitor()
 
     let stopped = false
     let isSyncing = false
     let intervalId = null
-
+    // fonction pour gérer les scénarios de non-authentification en appliquant l'état déconnecté et en affichant le popup de session expirée si nécessaire
     const handleUnauthenticated = () => {
-        applyLoggedOutState(updateHeaderAuth)
-
-        if (typeof onUnauthenticated === "function") {
-            onUnauthenticated()
-        }
+        applyLoggedOutState(updateHeaderAuth) //met à jour le header pour refléter l'état de déconnecté
 
         if (redirectToLogin && window.location.pathname !== loginPath) {
-            showSessionExpiredPopup(loginPath)
+            showSessionExpiredPopup(loginPath)// affiche le popup de session expirée qui redirige ensuite vers la page de connexion
         }
     }
 
@@ -164,22 +159,18 @@ export function startAuthSessionMonitor({
 
             handleUnauthenticated()
         } catch (error) {
-            if (typeof onError === "function") {
-                onError(error)
-            } else {
-                console.error("Erreur lors de la verification de session:", error)
-            }
+            console.error("Erreur lors de la verification de session:", error)
         } finally {
             isSyncing = false
         }
     }
-
+    //si onglet actif on verif la session
     const syncOnFocus = () => {
         if (!document.hidden) {
             void syncSession()
         }
     }
-
+    // lancer la vérification de session immédiatement pour mettre à jour le header dès que possible, puis configurer des vérifications périodiques et lors du retour de l'utilisateur sur l'onglet
     document.addEventListener("visibilitychange", syncOnFocus)
     window.addEventListener("focus", syncOnFocus)
     intervalId = window.setInterval(() => {
@@ -187,7 +178,7 @@ export function startAuthSessionMonitor({
     }, intervalMs)
 
     void syncSession()
-
+    // fonction de nettoyage pour arrêter le suivi de session et libérer les ressources
     const cleanup = () => {
         if (stopped) {
             return
@@ -203,7 +194,7 @@ export function startAuthSessionMonitor({
         window.removeEventListener("focus", syncOnFocus)
     }
 
-    window.__nlAuthMonitorCleanup = cleanup
+    window.__nlAuthMonitorCleanup = cleanup // stocker la fonction de nettoyage pour permettre d'arrêter le suivi de session ultérieurement si nécessaire
 
     return cleanup
 }

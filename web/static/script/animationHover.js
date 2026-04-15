@@ -2,12 +2,13 @@ let favoritesSetPromise = null;
 
 function getFavoritesSet() {
 	if (!favoritesSetPromise) {
+		// Charge une seule fois les favoris puis met en cache la Promise.
 		favoritesSetPromise = fetch("/api/favoris", { credentials: "same-origin" })
 			.then((response) => {
 				if (!response.ok) {
 					return [];
 				}
-				return response.json();
+				return response.json(); // sorte de "then"
 			})
 			.then((items) => {
 				const list = Array.isArray(items) ? items : [];
@@ -16,13 +17,13 @@ function getFavoritesSet() {
 			.catch(() => new Set());
 	}
 
-	return favoritesSetPromise;
+	return favoritesSetPromise;// sort de la fonction
 }
 
 async function addFavorite(mediaId, mediaType, title, posterPath) {
 	try {
 		const response = await fetch("/api/favoris", {
-			method: "POST",
+			method: "POST", // envoie
 			credentials: "same-origin",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
@@ -56,13 +57,13 @@ window.setupHoverPreview = function setupHoverPreview(slide, item, mediaType) {
 	if (!(slide instanceof HTMLElement) || !item) {
 		return;
 	}
-
+	// extraire les informations nécessaires de l'item pour l'affichage du hover
 	const title = item.title || item.name || "Titre inconnu";
 	const year = (item.release_date || item.first_air_date || "").slice(0, 4);
 	const kind = mediaType === "tv" ? "Série" : "Film";
 	const meta = year ? `${year} · ${kind}` : kind;
 	const frenchOverview = typeof item.overview === "string" && item.overview.trim() ? item.overview.trim() : "";
-
+	// créer les éléments du hover avec les classes appropriées pour le style et l'accessibilité
 	const hover = document.createElement("div");
 	hover.className = "movie-slide-btn__hover";
 
@@ -88,6 +89,7 @@ window.setupHoverPreview = function setupHoverPreview(slide, item, mediaType) {
 	const mediaId = item.id == null ? "" : String(item.id);
 
 	const updateFavoriteState = (isFavorite) => {
+		// Synchronise l'UI du coeur avec l'état courant des favoris.
 		favoriteAction.classList.toggle("is-active", isFavorite);
 		favoriteAction.textContent = isFavorite ? "♥" : "♡";
 		favoriteAction.setAttribute(
@@ -104,6 +106,7 @@ window.setupHoverPreview = function setupHoverPreview(slide, item, mediaType) {
 			return;
 		}
 
+		// Verrouille temporairement le bouton pour éviter les doubles clics.
 		favoriteAction.classList.add("is-loading");
 
 		const favorites = await getFavoritesSet();
@@ -138,12 +141,14 @@ window.setupHoverPreview = function setupHoverPreview(slide, item, mediaType) {
 	slide.appendChild(hover);
 
 	if (mediaId) {
+		// État initial du coeur au rendu du hover.
 		getFavoritesSet().then((favorites) => {
 			updateFavoriteState(favorites.has(mediaId));
 		});
 	}
 
 	if (!frenchOverview && item.id) {
+		// Fallback: récupère un résumé anglais si la version FR est vide.
 		const detailsType = mediaType === "tv" ? "tv" : "movie";
 		fetch(`/api/tmdb/details?type=${detailsType}&id=${item.id}&language=en-US`, {
 			credentials: "same-origin",

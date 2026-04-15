@@ -4,7 +4,7 @@ const db = require("./database");
 function generateToken() {
     return crypto.randomBytes(32).toString("hex")
 }
-
+// convertit pour comparer 
 function parseExpirationValue(expiresAt) {
     const numericValue = Number(expiresAt)
     if (Number.isFinite(numericValue)) {
@@ -14,12 +14,12 @@ function parseExpirationValue(expiresAt) {
     const parsedDate = Date.parse(expiresAt)
     return Number.isFinite(parsedDate) ? parsedDate : NaN
 }
-
+// Supprime les tokens expirés de la base de données, en vérifiant d'abord leur validité et en les supprimant si nécessaire
 function cleanupExpiredTokens(callback) {
     db.all("SELECT id, expires_at FROM tokens", [], (err, rows) => {
         if (err) {
             if (typeof callback === "function") {
-                callback()
+                callback()// on continue quand meme si ya errer
             }
             return
         }
@@ -46,7 +46,7 @@ function cleanupExpiredTokens(callback) {
         })
     })
 }
-
+// fonction pour vérifier la validité d'un token de session (supp tout les tokens expirés avant de vérifier le token fourni)
 function checkToken(token, callback) {
     cleanupExpiredTokens(() => {
         db.get("SELECT user_id, expires_at FROM tokens WHERE token = ? ORDER BY id DESC LIMIT 1", [token], (err, row) => {
@@ -66,7 +66,7 @@ function checkToken(token, callback) {
         })
     })
 }
-
+// recupe le token de la session 
 function getSessionTokenFromCookie(req) {
     const cookieHeader = req.headers.cookie || ""
     const cookies = cookieHeader.split(";")

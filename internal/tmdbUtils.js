@@ -1,6 +1,6 @@
 const { randomInt } = require("crypto")
 const { getMovieDetails, getTvDetails, getPersonDetails } = require("./appelAPI")
-
+// recupere le nombre de page total pour prendre une page aleatoire 
 async function getRandomCarouselPage(fetchPage, credential, maxPage = 500) {
     const firstPage = await fetchPage(credential, 1)
     const totalPages = Number.isFinite(firstPage.total_pages) ? firstPage.total_pages : 1
@@ -26,7 +26,7 @@ async function getRandomCarouselPage(fetchPage, credential, maxPage = 500) {
 
     return firstPage
 }
-
+// Fonction générique pour faire une requête à l'API TMDB et retourner le JSON, avec gestion des erreurs HTTP
 function getYoutubeTrailer(videos) {
     const videoResults = Array.isArray(videos && videos.results) ? videos.results : []
     const youtubeVideos = videoResults.filter((video) =>
@@ -49,7 +49,7 @@ function getYoutubeTrailer(videos) {
 
     return youtubeVideos[0]
 }
-
+// Normalise une langue donnée en format "xx-XX", avec des règles spécifiques pour les cas courants et un fallback par défaut.
 function normalizeLanguage(language) {
     if (!language || typeof language !== "string") return "fr-FR"
 
@@ -72,7 +72,7 @@ function hasText(value) {
 function hasResults(list) {
     return Array.isArray(list) && list.length > 0
 }
-
+//fusionne les details de plusieur langues pour max d'infos sur un film ou une serie
 function mergeLocalizedDetails(base, candidate) {
     const merged = { ...base }
 
@@ -127,7 +127,7 @@ async function getLocalizedDetails(contentType, id, credential, preferredLanguag
             : (language) => getMovieDetails(credential, id, language)
 
     const languagesTried = []
-    const languageSet = new Set()
+    const languageSet = new Set() //collection de valeur unique
 
     const primaryLanguage = normalizeLanguage(preferredLanguage)
     languageSet.add(primaryLanguage)
@@ -136,10 +136,10 @@ async function getLocalizedDetails(contentType, id, credential, preferredLanguag
     languagesTried.push(primaryLanguage)
 
     const originalLanguage = normalizeLanguage(details.original_language)
-    // Prioritize English fallback before original language when FR fields are missing.
+ 
     languageSet.add("en-US")
     languageSet.add(originalLanguage)
-
+    // on regarde les details des langues du tableau
     for (const language of languageSet) {
         if (languagesTried.includes(language)) continue
 

@@ -1,3 +1,4 @@
+//Cree les requetes pour l'api
 function buildTmdbRequest(pathname, credential, params = {}) {
     const token = (credential || "").trim();
 
@@ -28,7 +29,7 @@ function buildTmdbRequest(pathname, credential, params = {}) {
         },
     };
 }
-
+// Fonction générique pour faire une requête à l'API TMDB et retourner le JSON
 async function fetchTmdbJson(pathname, credential, params = {}) {
     const request = buildTmdbRequest(pathname, credential, params)
     const response = await fetch(request.url, request.options)
